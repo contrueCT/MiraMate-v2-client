@@ -3,6 +3,18 @@ import { ref, nextTick, watch } from 'vue'
 import ChatHeader from '@/components/ChatHeader.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
+import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+
+const route = useRoute()
+const router = useRouter()
+
+// 通过计算属性判断当前是否应显示设置页
+const isSettingsOpen = computed(() => route.path.startsWith('/settings'))
+
+function openSettings() {
+  router.push('/settings')
+}
 
 // 定义消息的类型接口
 interface Message {
@@ -64,7 +76,7 @@ function handleSendMessage(inputText: string) {
   <div
     class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end"
   >
-    <ChatHeader />
+    <ChatHeader @open-settings="openSettings" />
 
     <!-- 2. 中间消息列表 -->
     <!-- pb-48: 增加底部内边距，为悬浮的输入框留出空间，防止内容被遮挡 -->
@@ -85,4 +97,11 @@ function handleSendMessage(inputText: string) {
       <ChatInputArea @send-message="handleSendMessage" />
     </div>
   </div>
+
+  <!-- 设置模态框 -->
+  <RouterView v-slot="{ Component }">
+    <Transition name="scale-fade">
+      <component :is="Component" v-if="isSettingsOpen" />
+    </Transition>
+  </RouterView>
 </template>

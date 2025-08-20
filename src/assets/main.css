@@ -24,3 +24,24 @@
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.4); /* 颜色加深 */
 }
+
+/* 窗口进入/离开动画 */
+.scale-fade-enter-active,
+.scale-fade-leave-active {
+  transition: all 0.25s ease;
+}
+.scale-fade-enter-from,
+.scale-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* 内容区域切换动画 */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.content-fade-enter-from,
+.content-fade-leave-to {
+  opacity: 0;
+}

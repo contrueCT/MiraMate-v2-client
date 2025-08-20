@@ -7,7 +7,27 @@ const router = createRouter({
     {
       path: '/',
       name: 'chat',
-      component: ChatView, // 默认显示聊天页面
+      component: ChatView,
+      // 添加子路由，用于在ChatView内部显示SettingsView模态框
+      children: [
+        {
+          path: 'settings',
+          component: () => import('@/views/SettingsView.vue'),
+          // 设置页的子路由（左侧导航对应的内容）
+          children: [
+            { path: '', redirect: '/settings/conversation' }, // 默认重定向
+            {
+              path: 'conversation',
+              component: () => import('@/components/settings/ConversationSettings.vue'),
+            },
+            { path: 'model', component: () => import('@/components/settings/ModelSettings.vue') },
+            {
+              path: 'preferences',
+              component: () => import('@/components/settings/Preferences.vue'),
+            },
+          ],
+        },
+      ],
     },
   ],
 })
