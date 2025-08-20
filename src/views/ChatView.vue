@@ -1,46 +1,88 @@
 <script setup lang="ts">
-import { showDesktopNotification } from '@/platform/desktop'
+import { ref, nextTick, watch } from 'vue'
+import ChatHeader from '@/components/ChatHeader.vue'
+import MessageBubble from '@/components/MessageBubble.vue'
+import ChatInputArea from '@/components/ChatInputArea.vue'
 
-function handleSend() {
-  const message = 'Hello from the Chat View with Tailwind!'
-  console.log('Sending message...')
-  showDesktopNotification(message)
+// 定义消息的类型接口
+interface Message {
+  id: number
+  text: string
+  sender: 'ai' | 'user'
+}
+
+// ---- 使用静态假数据来构建UI ----
+const messages = ref<Message[]>([
+  { id: 1, text: 'Oh?', sender: 'ai' },
+  { id: 2, text: 'Cool', sender: 'ai' },
+  { id: 3, text: 'How does it work?', sender: 'ai' },
+  { id: 4, text: "No honestly I'm thinking of a career pivot", sender: 'user' },
+  { id: 5, text: 'This is the main chat template', sender: 'user' },
+  { id: 6, text: 'Simple', sender: 'user' },
+  {
+    id: 7,
+    text: "You just edit any text to type in the conversation you want to show, and delete any bubbles you don't want to use",
+    sender: 'user',
+  },
+  { id: 8, text: 'Boom', sender: 'user' },
+])
+// ---------------------------------
+
+// 用于自动滚动的逻辑
+const messageContainer = ref<HTMLElement | null>(null)
+
+// 监听消息数组的变化，当有新消息时，自动滚动到底部
+watch(
+  messages,
+  () => {
+    // nextTick 确保DOM更新后再执行滚动
+    nextTick(() => {
+      if (messageContainer.value) {
+        messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+      }
+    })
+  },
+  { deep: true },
+) // deep watch 保证能监听到数组push
+
+// 处理发送新消息的函数
+function handleSendMessage(inputText: string) {
+  if (!inputText.trim()) return // 忽略空消息
+
+  messages.value.push({
+    id: Date.now(),
+    text: inputText,
+    sender: 'user',
+  })
+
+  // TODO: 在这里可以模拟AI回复
 }
 </script>
 
 <template>
-  <!-- 
-    使用 Tailwind CSS 来给页面添加样式：
-    - h-screen: 高度占满整个屏幕
-    - bg-gray-100: 浅灰色背景
-    - dark:bg-slate-900: 在暗黑模式下，使用深石板色背景
-    - flex flex-col items-center justify-center: 使用 flex 布局，让内容垂直水平居中
-  -->
-  <div class="flex h-screen flex-col items-center justify-center bg-gray-100 dark:bg-slate-900">
-    <!--
-      - text-4xl: 字体大小
-      - font-bold: 字体加粗
-      - text-slate-800: 深石板色文字
-      - dark:text-white: 在暗黑模式下，使用白色文字
-      - mb-6: margin-bottom，添加一些下边距
-    -->
-    <h1 class="mb-6 text-4xl font-bold text-slate-800 dark:text-white">MiraMate Chat</h1>
+  <!-- 1. 应用新的背景渐变色，并设置为相对定位的容器 -->
+  <div
+    class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end"
+  >
+    <ChatHeader />
 
-    <!--
-      - bg-sky-500: 天蓝色背景
-      - text-white: 白色文字
-      - font-semibold: 中等粗细字体
-      - px-6 py-3: 内边距 (padding)，x轴和y轴
-      - rounded-lg: 大圆角
-      - transition-all: 所有属性变化都有过渡效果
-      - hover:bg-sky-600: 鼠标悬停时，背景色变深
-      - active:scale-95: 鼠标点击时，按钮缩小一点点，提供反馈
-    -->
-    <button
-      @click="handleSend"
-      class="rounded-lg bg-sky-500 px-6 py-3 font-semibold text-white transition-all hover:bg-sky-600 active:scale-95"
-    >
-      Send Test Message
-    </button>
+    <!-- 2. 中间消息列表 -->
+    <!-- pb-48: 增加底部内边距，为悬浮的输入框留出空间，防止内容被遮挡 -->
+    <main ref="messageContainer" class="flex-grow overflow-y-auto p-4 space-y-4 pb-48">
+      <div class="text-center text-xs text-gray-400">Nov 30, 2023, 9:41 AM</div>
+
+      <MessageBubble
+        v-for="message in messages"
+        :key="message.id"
+        :text="message.text"
+        :sender="message.sender"
+      />
+    </main>
+
+    <!-- 3. 底部输入区域 -->
+    <!-- 使用绝对定位实现悬浮效果 -->
+    <div class="absolute bottom-0 left-0 right-0 p-4">
+      <ChatInputArea @send-message="handleSendMessage" />
+    </div>
   </div>
 </template>

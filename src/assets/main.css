@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 自定义整个滚动条的轨道 */
+::-webkit-scrollbar {
+  width: 6px; /* 滚动条宽度 */
+}
+
+/* 滚动条的轨道 (背景) */
+::-webkit-scrollbar-track {
+  background: transparent; /* 轨道背景透明 */
+}
+
+/* 滚动条滑块 */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); /* 滑块颜色：半透明的深灰色 */
+  border-radius: 10px; /* 滑块圆角 */
+  border: 2px solid transparent; /* 增加一个透明边框，让滑块看起来更细 */
+  background-clip: content-box; /* 让背景色只在内容区域显示 */
+}
+
+/* 鼠标悬停在滑块上时的样式 */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4); /* 颜色加深 */
+}
