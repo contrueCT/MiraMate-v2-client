@@ -1,31 +1,42 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
-import electron from 'vite-plugin-electron' // 注意这里的 '/renderer'
-import renderer from 'vite-plugin-electron-renderer'
+import electron from 'vite-plugin-electron/simple'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
-    electron([
-      {
-        // 主进程配置
+    electron({
+      main: {
         entry: 'electron/main.ts',
-      },
-      {
-        // 预加载脚本配置
-        entry: 'electron/preload.ts',
-        onstart(options) {
-          // 预加载脚本编译完成后，通知渲染进程重新加载
-          options.reload()
+        // (可选) 为主进程也强制输出mjs
+        vite: {
+          build: {
+            rollupOptions: {
+              output: {
+                entryFileNames: '[name].mjs',
+              },
+            },
+          },
         },
       },
-    ]),
-    renderer(),
+      preload: {
+        input: fileURLToPath(new URL('./electron/preload.ts', import.meta.url)),
+        // 核心改动在这里：
+        // 强制 Vite 将预加载脚本打包成 ESM 格式，并输出为 .mjs 文件
+        vite: {
+          build: {
+            rollupOptions: {
+              output: {
+                // [name] 会被替换为 'preload'
+                entryFileNames: '[name].mjs',
+              },
+            },
+          },
+        },
+      },
+      renderer: {},
+    }),
   ],
   resolve: {
     alias: {

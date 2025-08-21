@@ -2,62 +2,78 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSettingsStore } from '@/core/stores/settings'
+import { useServiceStore } from '@/core/stores/service'
+import { backendToFrontend, frontendToBackend } from '@/core/services/configAdapter'
+
+// 导入所有需要的图标
+import IconServiceConnection from '@/components/icons/IconServiceConnection.vue'
 import IconConversation from '@/components/icons/IconConversation.vue'
 import IconModel from '@/components/icons/IconModel.vue'
 import IconPreferences from '@/components/icons/IconPreferences.vue'
 import IconClose from '@/components/icons/IconClose.vue'
-import { backendToFrontend, frontendToBackend } from '@/core/services/configAdapter'
-import { storeToRefs } from 'pinia'
 
+// 1. 实例化所有的Store
 const settingsStore = useSettingsStore()
+const serviceStore = useServiceStore()
 const router = useRouter()
-const { configStatus } = storeToRefs(settingsStore)
 
-const statusMessage = computed(() => {
-  switch (configStatus.value) {
-    case 'partial':
-      return '部分配置已加载，请检查并补全缺失信息。'
-    case 'error':
-      return '加载配置失败或配置为空，请手动填写。'
-    default:
-      return ''
-  }
-})
-
-// 1. 使用转换函数初始化本地草稿
+// 2. 创建一个包含所有设置项的、完整的本地草稿(draft)
 const draft = ref({
+  // a. 来自 serviceStore 的服务配置
+  service: {
+    url: serviceStore.endpointUrl,
+    key: serviceStore.authKey,
+  },
+  // b. 来自 settingsStore 的对话设定
   conversation: JSON.parse(JSON.stringify(settingsStore.conversation)),
+  // c. 来自 settingsStore 的模型设定 (经过转换)
   models: backendToFrontend(settingsStore.llmConfigs),
+  // d. 来自 settingsStore 的应用偏好
   preferences: JSON.parse(JSON.stringify(settingsStore.preferences)),
 })
 
-// 2. hasChanges 的比较逻辑需要更新
+// 3. 创建一个包含所有原始状态的计算属性，用于比较变更
+const originalState = computed(() => ({
+  service: {
+    url: serviceStore.endpointUrl,
+    key: serviceStore.authKey,
+  },
+  conversation: settingsStore.conversation,
+  models: backendToFrontend(settingsStore.llmConfigs),
+  preferences: settingsStore.preferences,
+}))
+
+// 4. `hasChanges` 计算属性，现在会比较完整的 draft 和 originalState
 const hasChanges = computed(() => {
-  const originalState = {
-    conversation: settingsStore.conversation,
-    models: backendToFrontend(settingsStore.llmConfigs),
-    preferences: settingsStore.preferences,
-  }
-  return JSON.stringify(draft.value) !== JSON.stringify(originalState)
+  return JSON.stringify(draft.value) !== JSON.stringify(originalState.value)
 })
 
+// 5. 关闭模态框的函数
 function closeSettings() {
   router.push('/')
 }
 
+// 6. 保存所有更改的函数
 function handleSave() {
   if (hasChanges.value) {
-    // 3. 保存时，使用转换函数将draft转回后端格式
+    // a. 保存服务配置
+    serviceStore.saveServiceConfig(draft.value.service)
+
+    // b. 保存对话和模型配置 (需要转换回后端格式)
     settingsStore.saveSettingsToServer({
       conversation: draft.value.conversation,
       llm: frontendToBackend(draft.value.models),
     })
+
+    // c. 保存应用偏好
     settingsStore.savePreferences(draft.value.preferences)
   }
   closeSettings()
 }
 
+// 7. 更新导航栏，包含所有四个项目
 const navItems = [
+  { path: '/settings/connection', icon: IconServiceConnection, label: '服务连接' },
   { path: '/settings/conversation', icon: IconConversation, label: '对话设定' },
   { path: '/settings/model', icon: IconModel, label: '模型设定' },
   { path: '/settings/preferences', icon: IconPreferences, label: '应用偏好' },
@@ -65,16 +81,16 @@ const navItems = [
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-40 flex items-center justify-center">
+  <div class="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 flex items-center justify-center">
     <div
-      class="w-[800px] h-[600px] bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl flex flex-col overflow-hidden"
+      class="w-[800px] h-[600px] bg-white/70 backdrop-blur-xl rounded-xl shadow-2xl flex flex-col overflow-hidden"
     >
       <!-- 标题栏 -->
-      <header class="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200">
+      <header class="flex-shrink-0 flex items-center justify-between p-3 border-b border-black/10">
         <h1 class="text-lg font-semibold text-gray-800 ml-2">设置</h1>
         <button
           @click="closeSettings"
-          class="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
+          class="p-2 text-gray-500 hover:bg-black/10 rounded-full transition-colors"
         >
           <IconClose :size="20" />
         </button>
@@ -83,13 +99,13 @@ const navItems = [
       <!-- 主体内容 -->
       <div class="flex flex-grow overflow-hidden">
         <!-- 左侧导航 -->
-        <nav class="w-[200px] flex-shrink-0 bg-gray-50 p-4">
+        <nav class="w-[200px] flex-shrink-0 bg-black/5 p-4 space-y-1">
           <RouterLink
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
-            class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-600 transition-colors hover:bg-white hover:shadow-sm"
-            active-class="bg-blue-50 text-blue-600 font-semibold shadow-sm"
+            class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-black/10"
+            active-class="bg-blue-100 text-blue-700 font-semibold"
           >
             <component :is="item.icon" :size="20" />
             <span>{{ item.label }}</span>
@@ -101,7 +117,11 @@ const navItems = [
           <div class="flex-grow p-6 overflow-y-auto">
             <RouterView v-slot="{ Component }">
               <Transition name="content-fade" mode="out-in">
-                <!-- 将draft作为prop传递给子组件 -->
+                <!-- 
+                  将完整的 draft 作为 v-model 传递给子组件。
+                  每个子组件(如ServiceConnection.vue, ConversationSettings.vue) 
+                  内部只会修改 draft 中属于自己的那一部分，例如 draft.service 或 draft.conversation。
+                -->
                 <component :is="Component" v-model:draft="draft" />
               </Transition>
             </RouterView>
@@ -109,11 +129,11 @@ const navItems = [
 
           <!-- 底部操作栏 -->
           <footer
-            class="flex-shrink-0 flex justify-end items-center space-x-4 p-4 border-t border-gray-200"
+            class="flex-shrink-0 flex justify-end items-center space-x-4 p-4 border-t border-black/10"
           >
             <button
               @click="closeSettings"
-              class="px-4 py-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+              class="px-4 py-2 rounded-md hover:bg-black/10 transition-colors"
             >
               取消
             </button>

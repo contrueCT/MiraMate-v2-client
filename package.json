@@ -1,7 +1,7 @@
 {
   "name": "miramate-v2-client",
   "version": "0.0.0",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/main.mjs",
   "private": true,
   "type": "module",
   "engines": {
