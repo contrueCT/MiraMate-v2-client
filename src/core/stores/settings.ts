@@ -19,11 +19,18 @@ export const useSettingsStore = defineStore('settings', () => {
   const conversation = ref({ aiName: '小梦', userAlias: '', persona: '' })
   const llmConfigs = ref<LLMConfig[]>([])
   const preferences = ref({
-    /* ... */
+    theme: '跟随系统' as '浅色' | '深色' | '跟随系统',
+    language: '简体中文',
+    enableNotifications: true,
   })
 
   // (UX增强) 新增一个状态来追踪配置的加载情况
   const configStatus = ref<'idle' | 'loaded' | 'partial' | 'error'>('idle')
+
+  function loadPreferences(persistedPrefs: any) {
+    // 使用 Object.assign 来合并，而不是完全替换，这样可以保留默认值以防某些字段丢失
+    preferences.value = Object.assign({}, preferences.value, persistedPrefs)
+  }
 
   // --- Actions ---
   function loadSettingsFromServer(serverData: any) {
@@ -68,6 +75,7 @@ export const useSettingsStore = defineStore('settings', () => {
     conversation,
     llmConfigs,
     preferences,
+    loadPreferences,
     configStatus,
     loadSettingsFromServer,
     saveSettingsToServer,

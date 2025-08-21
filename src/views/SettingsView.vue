@@ -56,8 +56,11 @@ function closeSettings() {
 // 6. 保存所有更改的函数
 function handleSave() {
   if (hasChanges.value) {
-    // a. 保存服务配置
-    serviceStore.saveServiceConfig(draft.value.service)
+    //调用 serviceStore 的新 action 进行统一保存。
+    serviceStore.saveAppConfig({
+      service: draft.value.service,
+      preferences: draft.value.preferences,
+    })
 
     // b. 保存对话和模型配置 (需要转换回后端格式)
     settingsStore.saveSettingsToServer({

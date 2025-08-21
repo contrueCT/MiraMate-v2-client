@@ -1,11 +1,11 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { useSettingsStore } from './settings' // 导入 settings store
 
-// 直接访问 window.electronAPI (如果不存在，提供一个备用方案以便在纯浏览器中调试)
 const api = window.electronAPI || {
-  getConfig: async () => localStorage.getItem('mira-service-config'),
+  getConfig: async () => localStorage.getItem('mira-config'), // 文件名统一
   saveConfig: async (config: string) => {
-    localStorage.setItem('mira-service-config', config)
+    localStorage.setItem('mira-config', config)
     return { success: true }
   },
 }
@@ -19,36 +19,59 @@ export const useServiceStore = defineStore('service', () => {
 
   // --- Actions ---
 
-  async function loadServiceConfig() {
+  /**
+   * 从本地加载完整的应用配置
+   */
+  async function loadAppConfig() {
+    const settingsStore = useSettingsStore() // 在action内部获取另一个store的实例
+
     const configString = await api.getConfig()
     if (configString) {
       try {
-        const parsed = JSON.parse(configString)
-        endpointUrl.value = parsed.endpointUrl || ''
-        authKey.value = parsed.authKey || ''
-        // 可以在这里根据加载到的配置更新 connectionStatus
-        if (endpointUrl.value) {
-          connectionStatus.value = 'unconfigured' // 标记为已配置但未测试
+        const parsedConfig = JSON.parse(configString)
+
+        // 1. 加载服务配置 (service部分)
+        if (parsedConfig.service) {
+          endpointUrl.value = parsedConfig.service.endpointUrl || ''
+          authKey.value = parsedConfig.service.authKey || ''
+        }
+
+        // 2. 加载并分发应用偏好 (preferences部分)
+        if (parsedConfig.preferences) {
+          // 调用 settingsStore 的 action 来更新它的状态
+          settingsStore.loadPreferences(parsedConfig.preferences)
         }
       } catch (e) {
-        console.error('Failed to parse service config from main process', e)
+        console.error('Failed to parse app config', e)
       }
     }
   }
 
-  async function saveServiceConfig(config: { url: string; key: string }) {
-    endpointUrl.value = config.url
-    authKey.value = config.key
+  /**
+   * 保存完整的应用配置
+   */
+  async function saveAppConfig(fullConfig: {
+    service: { url: string; key: string }
+    preferences: any
+  }) {
+    // 1. 更新自己的 state
+    endpointUrl.value = fullConfig.service.url
+    authKey.value = fullConfig.service.key
 
-    const configString = JSON.stringify({
-      endpointUrl: config.url,
-      authKey: config.key,
-    })
+    // 2. 组合成完整的配置文件对象
+    const configToSave = {
+      service: {
+        endpointUrl: fullConfig.service.url,
+        authKey: fullConfig.service.key,
+      },
+      preferences: fullConfig.preferences,
+    }
+
+    const configString = JSON.stringify(configToSave, null, 2) // 格式化JSON，方便用户直接编辑文件
 
     const result = await api.saveConfig(configString)
     if (!result.success) {
-      console.error('Failed to save config via main process:', result.error)
-      // 可以在这里向用户显示一个保存失败的提示
+      console.error('Failed to save app config:', result.error)
     }
   }
 
@@ -91,15 +114,15 @@ export const useServiceStore = defineStore('service', () => {
   }
 
   // 应用启动时自动加载配置
-  loadServiceConfig()
+  loadAppConfig()
 
   return {
     endpointUrl,
     authKey,
     connectionStatus,
     connectionError,
-    loadServiceConfig,
-    saveServiceConfig,
+    loadAppConfig, // 重命名
+    saveAppConfig, // 重命名
     testConnection,
   }
 })

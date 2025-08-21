@@ -115,7 +115,7 @@ watch(
   <!-- 设置模态框 -->
   <RouterView v-slot="{ Component }">
     <Transition name="scale-fade">
-      <component :is="Component" v-if="isSettingsOpen" />
+      <component :is="Component" :key="route.path" v-if="isSettingsOpen" />
     </Transition>
   </RouterView>
 </template>
