@@ -5,6 +5,37 @@ import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useChatStore } from '@/core/stores/chat'
+
+const chatStore = useChatStore()
+// 使用 storeToRefs 来保持 ref 的响应性
+const { messages } = storeToRefs(chatStore)
+
+function handleSendMessage(inputText: string) {
+  if (!inputText.trim()) return
+
+  // 调用 store 的 action 来添加用户消息
+  chatStore.addMessage({
+    sender: 'user',
+    text: inputText,
+  })
+
+  // (为第四阶段准备) 模拟AI思考和响应
+  chatStore.setAIStatus('thinking')
+  setTimeout(() => {
+    chatStore.startAIStreamingResponse()
+    let count = 0
+    const interval = setInterval(() => {
+      chatStore.appendToAIStreamingResponse(' ...' + count)
+      count++
+      if (count > 5) {
+        clearInterval(interval)
+        chatStore.finishAIStreamingResponse()
+      }
+    }, 300)
+  }, 1000)
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -23,52 +54,35 @@ interface Message {
   sender: 'ai' | 'user'
 }
 
-// ---- 使用静态假数据来构建UI ----
-const messages = ref<Message[]>([
-  { id: 1, text: 'Oh?', sender: 'ai' },
-  { id: 2, text: 'Cool', sender: 'ai' },
-  { id: 3, text: 'How does it work?', sender: 'ai' },
-  { id: 4, text: "No honestly I'm thinking of a career pivot", sender: 'user' },
-  { id: 5, text: 'This is the main chat template', sender: 'user' },
-  { id: 6, text: 'Simple', sender: 'user' },
-  {
-    id: 7,
-    text: "You just edit any text to type in the conversation you want to show, and delete any bubbles you don't want to use",
-    sender: 'user',
-  },
-  { id: 8, text: 'Boom', sender: 'user' },
-])
 // ---------------------------------
 
-// 用于自动滚动的逻辑
+// ---- 修复滚动逻辑 ----
 const messageContainer = ref<HTMLElement | null>(null)
 
-// 监听消息数组的变化，当有新消息时，自动滚动到底部
-watch(
-  messages,
-  () => {
-    // nextTick 确保DOM更新后再执行滚动
-    nextTick(() => {
-      if (messageContainer.value) {
-        messageContainer.value.scrollTop = messageContainer.value.scrollHeight
-      }
-    })
-  },
-  { deep: true },
-) // deep watch 保证能监听到数组push
-
-// 处理发送新消息的函数
-function handleSendMessage(inputText: string) {
-  if (!inputText.trim()) return // 忽略空消息
-
-  messages.value.push({
-    id: Date.now(),
-    text: inputText,
-    sender: 'user',
+function scrollToBottom() {
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    }
   })
-
-  // TODO: 在这里可以模拟AI回复
 }
+
+// 监听messages数组的长度变化（新增/删除消息时触发）
+watch(
+  () => messages.value.length,
+  () => {
+    scrollToBottom()
+  },
+)
+
+// 监听最后一条消息的文本变化（流式输出时触发）
+watch(
+  () => messages.value[messages.value.length - 1]?.text,
+  () => {
+    scrollToBottom()
+  },
+)
+// ----------------------
 </script>
 
 <template>

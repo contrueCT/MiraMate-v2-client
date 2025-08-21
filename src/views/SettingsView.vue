@@ -6,29 +6,39 @@ import IconConversation from '@/components/icons/IconConversation.vue'
 import IconModel from '@/components/icons/IconModel.vue'
 import IconPreferences from '@/components/icons/IconPreferences.vue'
 import IconClose from '@/components/icons/IconClose.vue'
+import { backendToFrontend, frontendToBackend } from '@/core/services/configAdapter'
+import { storeToRefs } from 'pinia'
 
-const router = useRouter()
 const settingsStore = useSettingsStore()
+const router = useRouter()
+const { configStatus } = storeToRefs(settingsStore)
 
-// 创建一个本地的、可编辑的草稿状态
-const draft = ref({
-  conversation: { ...settingsStore.conversation },
-  primaryModel: { ...settingsStore.primaryModel },
-  secondaryModel: { ...settingsStore.secondaryModel },
-  preferences: { ...settingsStore.preferences },
+const statusMessage = computed(() => {
+  switch (configStatus.value) {
+    case 'partial':
+      return '部分配置已加载，请检查并补全缺失信息。'
+    case 'error':
+      return '加载配置失败或配置为空，请手动填写。'
+    default:
+      return ''
+  }
 })
 
-// 深度比较草稿和原始store状态，判断是否有改动
+// 1. 使用转换函数初始化本地草稿
+const draft = ref({
+  conversation: JSON.parse(JSON.stringify(settingsStore.conversation)),
+  models: backendToFrontend(settingsStore.llmConfigs),
+  preferences: JSON.parse(JSON.stringify(settingsStore.preferences)),
+})
+
+// 2. hasChanges 的比较逻辑需要更新
 const hasChanges = computed(() => {
-  return (
-    JSON.stringify(draft.value) !==
-    JSON.stringify({
-      conversation: settingsStore.conversation,
-      primaryModel: settingsStore.primaryModel,
-      secondaryModel: settingsStore.secondaryModel,
-      preferences: settingsStore.preferences,
-    })
-  )
+  const originalState = {
+    conversation: settingsStore.conversation,
+    models: backendToFrontend(settingsStore.llmConfigs),
+    preferences: settingsStore.preferences,
+  }
+  return JSON.stringify(draft.value) !== JSON.stringify(originalState)
 })
 
 function closeSettings() {
@@ -37,7 +47,12 @@ function closeSettings() {
 
 function handleSave() {
   if (hasChanges.value) {
-    settingsStore.saveSettings(draft.value)
+    // 3. 保存时，使用转换函数将draft转回后端格式
+    settingsStore.saveSettingsToServer({
+      conversation: draft.value.conversation,
+      llm: frontendToBackend(draft.value.models),
+    })
+    settingsStore.savePreferences(draft.value.preferences)
   }
   closeSettings()
 }
