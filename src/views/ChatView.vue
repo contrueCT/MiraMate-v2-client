@@ -1,27 +1,49 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useChatStore } from '@/core/stores/chat'
+import { useRoute, useRouter } from 'vue-router'
 import ChatHeader from '@/components/ChatHeader.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
-import { useRoute, useRouter } from 'vue-router'
-import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useChatStore } from '@/core/stores/chat'
+import type { Message } from '@/core/types' // 导入Message类型
 
 const chatStore = useChatStore()
-// 使用 storeToRefs 来保持 ref 的响应性
 const { messages } = storeToRefs(chatStore)
+
+const messageContainer = ref<HTMLElement | null>(null)
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    }
+  })
+}
+
+watch(
+  () => messages.value.length,
+  () => {
+    scrollToBottom()
+  },
+)
+
+watch(
+  () => messages.value[messages.value.length - 1]?.text,
+  () => {
+    scrollToBottom()
+  },
+)
 
 function handleSendMessage(inputText: string) {
   if (!inputText.trim()) return
 
-  // 调用 store 的 action 来添加用户消息
   chatStore.addMessage({
     sender: 'user',
     text: inputText,
   })
 
-  // (为第四阶段准备) 模拟AI思考和响应
+  // 模拟AI响应 (这段可以保留用于测试)
   chatStore.setAIStatus('thinking')
   setTimeout(() => {
     chatStore.startAIStreamingResponse()
@@ -37,85 +59,79 @@ function handleSendMessage(inputText: string) {
   }, 1000)
 }
 
-const route = useRoute()
 const router = useRouter()
-
-// 通过计算属性判断当前是否应显示设置页
+const route = useRoute()
 const isSettingsOpen = computed(() => route.path.startsWith('/settings'))
 
-function openSettings() {
-  router.push('/settings')
+// --- 新增：时间处理逻辑 ---
+
+const TEN_MINUTES_IN_MS = 10 * 60 * 1000
+
+/**
+ * 判断是否需要为当前消息显示时间戳
+ * @param currentMessage 当前消息
+ * @param previousMessage 上一条消息 (可能为 undefined)
+ */
+function shouldShowTimestamp(currentMessage: Message, previousMessage?: Message): boolean {
+  // 如果是第一条消息，总是显示
+  if (!previousMessage) {
+    return true
+  }
+  // 如果与上一条消息的时间差大于10分钟，显示
+  if (currentMessage.timestamp - previousMessage.timestamp > TEN_MINUTES_IN_MS) {
+    return true
+  }
+  return false
 }
 
-// 定义消息的类型接口
-interface Message {
-  id: number
-  text: string
-  sender: 'ai' | 'user'
+/**
+ * 格式化时间戳为 HH:mm 格式
+ * @param timestamp 毫秒时间戳
+ */
+function formatTimestamp(timestamp: number): string {
+  const date = new Date(timestamp)
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  return `${hours}:${minutes}`
 }
-
-// ---------------------------------
-
-// ---- 修复滚动逻辑 ----
-const messageContainer = ref<HTMLElement | null>(null)
-
-function scrollToBottom() {
-  nextTick(() => {
-    if (messageContainer.value) {
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
-    }
-  })
-}
-
-// 监听messages数组的长度变化（新增/删除消息时触发）
-watch(
-  () => messages.value.length,
-  () => {
-    scrollToBottom()
-  },
-)
-
-// 监听最后一条消息的文本变化（流式输出时触发）
-watch(
-  () => messages.value[messages.value.length - 1]?.text,
-  () => {
-    scrollToBottom()
-  },
-)
-// ----------------------
+// ----------------------------
 </script>
 
 <template>
-  <!-- 1. 应用新的背景渐变色，并设置为相对定位的容器 -->
   <div
     class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end"
   >
-    <ChatHeader @open-settings="openSettings" />
+    <ChatHeader @open-settings="router.push('/settings')" />
 
-    <!-- 2. 中间消息列表 -->
-    <!-- pb-48: 增加底部内边距，为悬浮的输入框留出空间，防止内容被遮挡 -->
-    <main ref="messageContainer" class="flex-grow overflow-y-auto p-4 space-y-4 pb-48">
-      <div class="text-center text-xs text-gray-400">Nov 30, 2023, 9:41 AM</div>
+    <main ref="messageContainer" class="flex-grow overflow-y-auto p-4 space-y-2 pb-48">
+      <!-- 
+        核心改动在这里：
+        - 我们使用 <template> 标签进行 v-for 循环，这样可以包裹多个元素（时间戳和消息气泡）。
+        - 在循环中，我们获取 message 和 index。
+        - v-if 指令调用我们新创建的 shouldShowTimestamp 函数来决定是否显示时间戳。
+      -->
+      <template v-for="(message, index) in messages" :key="message.id">
+        <!-- 时间戳显示区域 -->
+        <div
+          v-if="shouldShowTimestamp(message, messages[index - 1])"
+          class="text-center text-xs text-gray-500 py-2"
+        >
+          {{ formatTimestamp(message.timestamp) }}
+        </div>
 
-      <MessageBubble
-        v-for="message in messages"
-        :key="message.id"
-        :text="message.text"
-        :sender="message.sender"
-      />
+        <!-- 消息气泡本体 -->
+        <MessageBubble :text="message.text" :sender="message.sender" />
+      </template>
     </main>
 
-    <!-- 3. 底部输入区域 -->
-    <!-- 使用绝对定位实现悬浮效果 -->
     <div class="absolute bottom-0 left-0 right-0 p-4">
       <ChatInputArea @send-message="handleSendMessage" />
     </div>
-  </div>
 
-  <!-- 设置模态框 -->
-  <RouterView v-slot="{ Component }">
-    <Transition name="scale-fade">
-      <component :is="Component" :key="route.path" v-if="isSettingsOpen" />
-    </Transition>
-  </RouterView>
+    <RouterView v-slot="{ Component }">
+      <Transition name="scale-fade">
+        <component :is="Component" :key="route.path" v-if="isSettingsOpen" />
+      </Transition>
+    </RouterView>
+  </div>
 </template>

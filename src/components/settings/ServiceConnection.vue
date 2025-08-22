@@ -20,6 +20,30 @@ function handleTestConnection() {
     </div>
 
     <div>
+      <label class="font-semibold">网络环境</label>
+      <div class="flex bg-gray-200 p-1 rounded-md mt-1 w-fit">
+        <button
+          @click="draft.service.env = 'public'"
+          :class="[
+            'px-3 py-1 text-sm rounded-md transition-colors',
+            draft.service.env === 'public' ? 'bg-white shadow' : '',
+          ]"
+        >
+          公网
+        </button>
+        <button
+          @click="draft.service.env = 'local'"
+          :class="[
+            'px-3 py-1 text-sm rounded-md transition-colors',
+            draft.service.env === 'local' ? 'bg-white shadow' : '',
+          ]"
+        >
+          内网/本地
+        </button>
+      </div>
+    </div>
+
+    <div>
       <label class="font-semibold">服务地址 (Endpoint URL)</label>
       <input
         type="text"
@@ -29,7 +53,7 @@ function handleTestConnection() {
       />
     </div>
 
-    <div>
+    <div v-if="draft.service.env === 'public'">
       <label class="font-semibold">鉴权密钥 (Authorization Key)</label>
       <input
         type="password"

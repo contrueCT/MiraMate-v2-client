@@ -23,6 +23,7 @@ const draft = ref({
   service: {
     url: serviceStore.endpointUrl,
     key: serviceStore.authKey,
+    env: serviceStore.environment,
   },
   // b. 来自 settingsStore 的对话设定
   conversation: JSON.parse(JSON.stringify(settingsStore.conversation)),
@@ -37,6 +38,7 @@ const originalState = computed(() => ({
   service: {
     url: serviceStore.endpointUrl,
     key: serviceStore.authKey,
+    env: serviceStore.environment,
   },
   conversation: settingsStore.conversation,
   models: backendToFrontend(settingsStore.llmConfigs),

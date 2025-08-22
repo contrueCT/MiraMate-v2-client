@@ -12,33 +12,31 @@ const api = window.electronAPI || {
 
 export const useServiceStore = defineStore('service', () => {
   // --- State ---
+  // [修改 1/4]：在 State 中添加 environment 属性
   const endpointUrl = ref<string>('')
   const authKey = ref<string>('')
+  const environment = ref<'public' | 'local'>('public') // 默认为公网环境
   const connectionStatus = ref<'unconfigured' | 'testing' | 'success' | 'failed'>('unconfigured')
   const connectionError = ref<string>('')
 
   // --- Actions ---
 
-  /**
-   * 从本地加载完整的应用配置
-   */
   async function loadAppConfig() {
-    const settingsStore = useSettingsStore() // 在action内部获取另一个store的实例
+    const settingsStore = useSettingsStore()
 
     const configString = await api.getConfig()
     if (configString) {
       try {
         const parsedConfig = JSON.parse(configString)
 
-        // 1. 加载服务配置 (service部分)
         if (parsedConfig.service) {
           endpointUrl.value = parsedConfig.service.endpointUrl || ''
           authKey.value = parsedConfig.service.authKey || ''
+          // [修改 2/4]：加载 environment 设置，如果不存在则保持默认值
+          environment.value = parsedConfig.service.environment || 'public'
         }
 
-        // 2. 加载并分发应用偏好 (preferences部分)
         if (parsedConfig.preferences) {
-          // 调用 settingsStore 的 action 来更新它的状态
           settingsStore.loadPreferences(parsedConfig.preferences)
         }
       } catch (e) {
@@ -47,38 +45,35 @@ export const useServiceStore = defineStore('service', () => {
     }
   }
 
-  /**
-   * 保存完整的应用配置
-   */
   async function saveAppConfig(fullConfig: {
-    service: { url: string; key: string }
+    service: { url: string; key: string; env: 'public' | 'local' } // 增加 env
     preferences: any
   }) {
-    // 1. 更新自己的 state
     endpointUrl.value = fullConfig.service.url
     authKey.value = fullConfig.service.key
+    // [修改 3/4]：保存 environment 设置
+    environment.value = fullConfig.service.env
 
-    // 2. 组合成完整的配置文件对象
     const configToSave = {
       service: {
         endpointUrl: fullConfig.service.url,
         authKey: fullConfig.service.key,
+        environment: fullConfig.service.env,
       },
       preferences: fullConfig.preferences,
     }
 
-    const configString = JSON.stringify(configToSave, null, 2) // 格式化JSON，方便用户直接编辑文件
+    const configString = JSON.stringify(configToSave, null, 2)
 
+    // ... 保存逻辑不变 ...
     const result = await api.saveConfig(configString)
     if (!result.success) {
       console.error('Failed to save app config:', result.error)
     }
   }
 
-  /**
-   * 连接测试
-   */
-  async function testConnection(config: { url: string; key: string }) {
+  async function testConnection(config: { url: string; key: string; env: 'public' | 'local' }) {
+    // 增加 env
     connectionStatus.value = 'testing'
     connectionError.value = ''
 
@@ -89,13 +84,18 @@ export const useServiceStore = defineStore('service', () => {
     }
 
     try {
-      // 假设后端有一个 /api/health 或类似的端点用于健康检查
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+
+      // [修改 4/4]：只有在公网环境下才添加鉴权头
+      if (config.env === 'public') {
+        headers['Authorization'] = `Bearer ${config.key}`
+      }
+
       const response = await fetch(`${config.url}/api/health`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${config.key}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       if (response.ok) {
@@ -119,6 +119,7 @@ export const useServiceStore = defineStore('service', () => {
   return {
     endpointUrl,
     authKey,
+    environment,
     connectionStatus,
     connectionError,
     loadAppConfig, // 重命名
