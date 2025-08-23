@@ -58,19 +58,19 @@ function closeSettings() {
 // 6. 保存所有更改的函数
 function handleSave() {
   if (hasChanges.value) {
-    //调用 serviceStore 的新 action 进行统一保存。
+    // 保存对话和模型配置 (需要转换回后端格式)
+    settingsStore.saveRemoteSettings({
+      conversation: draft.value.conversation,
+      llm: frontendToBackend(draft.value.models),
+    })
+
+    // 调用 serviceStore 的新 action 进行统一保存。
     serviceStore.saveAppConfig({
       service: draft.value.service,
       preferences: draft.value.preferences,
     })
 
-    // b. 保存对话和模型配置 (需要转换回后端格式)
-    settingsStore.saveSettingsToServer({
-      conversation: draft.value.conversation,
-      llm: frontendToBackend(draft.value.models),
-    })
-
-    // c. 保存应用偏好
+    // 保存应用偏好
     settingsStore.savePreferences(draft.value.preferences)
   }
   closeSettings()

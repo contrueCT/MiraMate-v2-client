@@ -30,6 +30,8 @@ export const useServiceStore = defineStore('service', () => {
       console.log(`Endpoint URL changed to: ${newUrl}. Reconnecting WebSocket.`)
       // 调用连接，它内部会先关闭旧连接再创建新连接
       webSocketService.connect()
+      const settingsStore = useSettingsStore()
+      settingsStore.loadRemoteSettings()
     } else if (!newUrl && oldUrl) {
       console.log('Endpoint URL cleared. Disconnecting WebSocket.')
       webSocketService.disconnect()
@@ -57,6 +59,9 @@ export const useServiceStore = defineStore('service', () => {
       } catch (e) {
         console.error('Failed to parse app config', e)
       }
+    }
+    if (endpointUrl.value) {
+      settingsStore.loadRemoteSettings()
     }
   }
 
@@ -108,7 +113,7 @@ export const useServiceStore = defineStore('service', () => {
         connectionStatus.value = 'success'
         // 连接成功后，可以触发加载服务器配置
         const settingsStore = useSettingsStore()
-        settingsStore.loadSettingsFromServer()
+        settingsStore.loadRemoteSettings()
       } else {
         connectionStatus.value = 'failed'
         connectionError.value = `服务异常: ${health.status}`

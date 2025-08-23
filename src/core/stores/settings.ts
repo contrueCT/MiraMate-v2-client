@@ -34,48 +34,89 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // --- Actions ---
-  async function loadSettingsFromServer() {
+  /**
+   * [!] 核心修复:
+   * 重构为一个统一的、加载所有远程配置的 action
+   */
+  async function loadRemoteSettings() {
     try {
-      // 1. 调用 apiClient 获取LLM配置
-      const serverLLMConfig = await apiClient('/api/config/llm')
+      // 使用 Promise.all 并行发起两个API请求
+      const [llmResponse, envResponse] = await Promise.all([
+        apiClient('/api/config/llm'),
+        apiClient('/api/config/environment'),
+      ])
 
-      // 2. 使用已有的校验和净化函数处理返回的数据
-      const sanitized = validateAndSanitizeLLMConfigs(serverLLMConfig)
+      // --- 处理 LLM 配置 ---
+      const sanitized = validateAndSanitizeLLMConfigs(llmResponse)
       llmConfigs.value = sanitized
 
-      // 3. 根据结果更新加载状态
-      if (!serverLLMConfig) {
-        configStatus.value = 'error'
-      } else if (Array.isArray(serverLLMConfig) && sanitized.length < serverLLMConfig.length) {
+      // 更新LLM配置的加载状态
+      if (!llmResponse) {
+        // (根据Promise.all特性，这里其实不太会发生，除非apiClient内部逻辑改变)
+      } else if (Array.isArray(llmResponse) && sanitized.length < llmResponse.length) {
         configStatus.value = 'partial'
       } else if (sanitized.length > 0) {
         configStatus.value = 'loaded'
       } else {
-        configStatus.value = 'error'
+        configStatus.value = 'error' // 如果净化后为空，也视为错误
+      }
+
+      // --- 处理 Environment (对话设定) 配置 ---
+      if (envResponse) {
+        conversation.value = {
+          aiName: envResponse.agent_name || '小梦',
+          userAlias: envResponse.user_name || '小伙伴',
+          persona: envResponse.agent_description || '',
+        }
       }
     } catch (error) {
-      console.error('Failed to load settings from server:', error)
-      configStatus.value = 'error' // API请求失败，同样标记为错误
+      console.error('Failed to load remote settings from server:', error)
+      configStatus.value = 'error'
     }
   }
 
-  async function saveSettingsToServer(newConfigs: {
-    conversation: typeof conversation.value // conversation 实际在后端没有对应接口，但保留逻辑
+  /**
+   * 创建一个统一的、保存所有远程配置的 action
+   */
+  async function saveRemoteSettings(draft: {
+    conversation: typeof conversation.value
     llm: LLMConfig[]
   }) {
-    try {
-      // [!] 修改点: 调用 apiClient 保存配置
-      await apiClient('/api/config/llm', {
-        method: 'POST',
-        body: JSON.stringify(newConfigs.llm),
-      })
+    // 1. 准备后端需要的数据格式
+    const environmentConfigPayload = {
+      agent_name: draft.conversation.aiName,
+      user_name: draft.conversation.userAlias,
+      agent_description: draft.conversation.persona,
+    }
 
-      // 乐观更新
-      llmConfigs.value = JSON.parse(JSON.stringify(newConfigs.llm))
-      console.log('LLM settings saved to server successfully.')
+    const llmConfigPayload = draft.llm
+
+    try {
+      // 2. 乐观更新：立即更新本地 store
+      conversation.value = JSON.parse(JSON.stringify(draft.conversation))
+      llmConfigs.value = JSON.parse(JSON.stringify(llmConfigPayload))
+
+      console.log('Saving remote settings to server...')
+
+      // 3. 使用 Promise.all 并行发起两个保存请求
+      await Promise.all([
+        apiClient('/api/config/environment', {
+          method: 'POST',
+          body: JSON.stringify(environmentConfigPayload),
+        }),
+        apiClient('/api/config/llm', {
+          method: 'POST',
+          body: JSON.stringify(llmConfigPayload),
+        }),
+      ])
+
+      console.log('Remote settings saved successfully.')
+      // 可以在这里触发一个全局的成功通知
     } catch (error) {
-      console.error('Failed to save LLM settings to server:', error)
-      // 可以在此显示一个错误提示
+      console.error('Failed to save remote settings:', error)
+      // 可以在这里触发一个全局的失败通知
+      // 注意：乐观更新下，如果保存失败，UI上看起来是保存成功了。
+      // 一个更复杂的实现可以考虑在这里“回滚”状态，但这通常需要更复杂的UI/UX来处理。
     }
   }
 
@@ -89,8 +130,8 @@ export const useSettingsStore = defineStore('settings', () => {
     preferences,
     loadPreferences,
     configStatus,
-    loadSettingsFromServer,
-    saveSettingsToServer,
+    loadRemoteSettings,
+    saveRemoteSettings,
     savePreferences,
   }
 })
