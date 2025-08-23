@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-// 1. 导入 emoji-picker-element
 import 'emoji-picker-element'
+import { ref, computed } from 'vue' // 导入 computed
+import { useChatStore } from '@/core/stores/chat' // 导入 chat store
+import { storeToRefs } from 'pinia'
 
 import IconMic from '@/components/icons/IconMic.vue'
 import IconEmoji from '@/components/icons/IconEmoji.vue'
@@ -11,10 +12,17 @@ import IconSend from '@/components/icons/IconSend.vue'
 const inputText = ref('')
 const emit = defineEmits(['sendMessage'])
 
-// --- Emoji Picker Logic ---
-// 2. 创建一个状态来控制picker的显示和隐藏
+// 引入 chatStore 并创建计算属性
+const chatStore = useChatStore()
+const { aiStatus } = storeToRefs(chatStore)
+
+const isSendDisabled = computed(() => {
+  // 按钮禁用的条件是：输入框为空，或者AI不处于空闲状态
+  return !inputText.value.trim() || aiStatus.value !== 'idle'
+})
+
 const isPickerOpen = ref(false)
-// 3. 创建一个对 textarea 元素的引用，以便我们能操作光标
+
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 function togglePicker() {
@@ -85,11 +93,9 @@ function sendMessage() {
           @click="sendMessage"
           class="p-2 rounded-full transition-colors"
           :class="
-            inputText.trim()
-              ? 'text-blue-500 hover:bg-blue-100'
-              : 'text-gray-400 cursor-not-allowed'
+            isSendDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-blue-500 hover:bg-blue-100'
           "
-          :disabled="!inputText.trim()"
+          :disabled="isSendDisabled"
         >
           <IconSend :size="22" />
         </button>

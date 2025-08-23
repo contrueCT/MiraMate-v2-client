@@ -6,7 +6,7 @@
  * - thinking: 正在思考（请求已发送，等待第一个数据块）
  * - typing: 正在输入（正在接收流式数据）
  */
-export type AIStatus = 'idle' | 'thinking' | 'typing'
+export type AIStatus = 'idle' | 'thinking' | 'typing' | 'processing'
 
 /**
  * 单条消息的结构

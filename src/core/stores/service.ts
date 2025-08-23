@@ -1,6 +1,8 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { useSettingsStore } from './settings' // 导入 settings store
+import { apiClient } from '@/core/services/apiClient'
+import { webSocketService } from '@/core/services/socket'
 
 const api = window.electronAPI || {
   getConfig: async () => localStorage.getItem('mira-config'), // 文件名统一
@@ -20,6 +22,19 @@ export const useServiceStore = defineStore('service', () => {
   const connectionError = ref<string>('')
 
   // --- Actions ---
+
+  // [!] 修改点: 使用 watch 监听 endpointUrl 的变化
+  watch(endpointUrl, (newUrl, oldUrl) => {
+    // 只有当URL真的发生变化，并且新URL不为空时才操作
+    if (newUrl && newUrl !== oldUrl) {
+      console.log(`Endpoint URL changed to: ${newUrl}. Reconnecting WebSocket.`)
+      // 调用连接，它内部会先关闭旧连接再创建新连接
+      webSocketService.connect()
+    } else if (!newUrl && oldUrl) {
+      console.log('Endpoint URL cleared. Disconnecting WebSocket.')
+      webSocketService.disconnect()
+    }
+  })
 
   async function loadAppConfig() {
     const settingsStore = useSettingsStore()
@@ -72,44 +87,35 @@ export const useServiceStore = defineStore('service', () => {
     }
   }
 
-  async function testConnection(config: { url: string; key: string; env: 'public' | 'local' }) {
-    // 增加 env
+  async function testConnection() {
+    // 移除 config 参数
     connectionStatus.value = 'testing'
     connectionError.value = ''
 
-    if (!config.url) {
+    if (!endpointUrl.value) {
+      // 直接从 state 读取
       connectionStatus.value = 'failed'
       connectionError.value = '服务地址不能为空。'
       return
     }
 
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
+      // [!] 修改点: 调用 apiClient 进行健康检查
+      // 注意：apiClient 会自动处理URL和Key，我们只需提供端点
+      const health = await apiClient('/api/health')
 
-      // [修改 4/4]：只有在公网环境下才添加鉴权头
-      if (config.env === 'public') {
-        headers['Authorization'] = `Bearer ${config.key}`
-      }
-
-      const response = await fetch(`${config.url}/api/health`, {
-        method: 'GET',
-        headers,
-      })
-
-      if (response.ok) {
+      if ((health && health.status === 'healthy') || health.status === 'partial') {
         connectionStatus.value = 'success'
-      } else if (response.status === 401 || response.status === 403) {
-        connectionStatus.value = 'failed'
-        connectionError.value = '鉴权密钥无效或无权限。'
+        // 连接成功后，可以触发加载服务器配置
+        const settingsStore = useSettingsStore()
+        settingsStore.loadSettingsFromServer()
       } else {
         connectionStatus.value = 'failed'
-        connectionError.value = `服务器返回错误: ${response.status}`
+        connectionError.value = `服务异常: ${health.status}`
       }
     } catch (error) {
       connectionStatus.value = 'failed'
-      connectionError.value = '无法连接到服务地址，请检查URL和网络。'
+      connectionError.value = '无法连接到服务，请检查URL和网络。'
     }
   }
 

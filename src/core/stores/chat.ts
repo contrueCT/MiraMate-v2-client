@@ -49,10 +49,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 结束AI的流式响应
+   * 结束AI的流式响应，但进入后处理阶段
    */
   function finishAIStreamingResponse() {
-    aiStatus.value = 'idle'
+    aiStatus.value = 'processing' // 状态变为 processing，而不是 idle
     const lastMessage = messages.value[messages.value.length - 1]
     if (lastMessage && lastMessage.isStreaming) {
       lastMessage.isStreaming = false
@@ -60,9 +60,12 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 设置AI的状态
-   * @param status - 新的状态
+   * 彻底完成AI的响应流程
    */
+  function completeAIResponse() {
+    aiStatus.value = 'idle' // 状态最终回归 idle
+  }
+
   function setAIStatus(status: AIStatus) {
     aiStatus.value = status
   }
@@ -74,6 +77,7 @@ export const useChatStore = defineStore('chat', () => {
     startAIStreamingResponse,
     appendToAIStreamingResponse,
     finishAIStreamingResponse,
+    completeAIResponse, // 导出新 action
     setAIStatus,
   }
 })

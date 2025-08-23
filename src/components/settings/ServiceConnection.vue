@@ -8,7 +8,7 @@ const serviceStore = useServiceStore()
 const { connectionStatus, connectionError } = storeToRefs(serviceStore)
 
 function handleTestConnection() {
-  serviceStore.testConnection(draft.value.service)
+  serviceStore.testConnection()
 }
 </script>
 

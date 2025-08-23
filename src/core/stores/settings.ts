@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { LLMConfig } from '@/core/types'
 import { validateAndSanitizeLLMConfigs } from '@/core/services/configAdapter'
+import { apiClient } from '@/core/services/apiClient'
 
 // 为与后端交互的数据定义一个接口
 interface ServerSettings {
@@ -33,38 +34,49 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // --- Actions ---
-  function loadSettingsFromServer(serverData: any) {
-    // 接受任意类型的 serverData
-    // 1. 处理 conversation 部分 (同样可以增加校验)
-    if (serverData && typeof serverData.conversation === 'object') {
-      conversation.value = { ...conversation.value, ...serverData.conversation }
-    }
+  async function loadSettingsFromServer() {
+    try {
+      // 1. 调用 apiClient 获取LLM配置
+      const serverLLMConfig = await apiClient('/api/config/llm')
 
-    // 2. 使用校验函数处理 LLM 配置
-    const sanitized = validateAndSanitizeLLMConfigs(serverData?.llm)
-    llmConfigs.value = sanitized
+      // 2. 使用已有的校验和净化函数处理返回的数据
+      const sanitized = validateAndSanitizeLLMConfigs(serverLLMConfig)
+      llmConfigs.value = sanitized
 
-    // 3. 根据校验结果更新状态，以供UI显示提示
-    if (!serverData?.llm) {
-      configStatus.value = 'error' // 数据中完全没有llm字段
-    } else if (Array.isArray(serverData.llm) && sanitized.length < serverData.llm.length) {
-      configStatus.value = 'partial' // 原始数据比净化后的多，说明有部分被过滤掉了
-    } else if (sanitized.length > 0) {
-      configStatus.value = 'loaded' // 成功加载
-    } else {
-      configStatus.value = 'error' // 净化后为空，说明所有配置都无效
+      // 3. 根据结果更新加载状态
+      if (!serverLLMConfig) {
+        configStatus.value = 'error'
+      } else if (Array.isArray(serverLLMConfig) && sanitized.length < serverLLMConfig.length) {
+        configStatus.value = 'partial'
+      } else if (sanitized.length > 0) {
+        configStatus.value = 'loaded'
+      } else {
+        configStatus.value = 'error'
+      }
+    } catch (error) {
+      console.error('Failed to load settings from server:', error)
+      configStatus.value = 'error' // API请求失败，同样标记为错误
     }
   }
 
   async function saveSettingsToServer(newConfigs: {
-    conversation: typeof conversation.value
+    conversation: typeof conversation.value // conversation 实际在后端没有对应接口，但保留逻辑
     llm: LLMConfig[]
   }) {
-    conversation.value = JSON.parse(JSON.stringify(newConfigs.conversation))
-    llmConfigs.value = JSON.parse(JSON.stringify(newConfigs.llm))
+    try {
+      // [!] 修改点: 调用 apiClient 保存配置
+      await apiClient('/api/config/llm', {
+        method: 'POST',
+        body: JSON.stringify(newConfigs.llm),
+      })
 
-    console.log('Settings to be sent to server:', newConfigs)
-    // 未来在这里发起API请求
+      // 乐观更新
+      llmConfigs.value = JSON.parse(JSON.stringify(newConfigs.llm))
+      console.log('LLM settings saved to server successfully.')
+    } catch (error) {
+      console.error('Failed to save LLM settings to server:', error)
+      // 可以在此显示一个错误提示
+    }
   }
 
   function savePreferences(draft: typeof preferences.value) {

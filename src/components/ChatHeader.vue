@@ -20,6 +20,9 @@ const statusText = computed(() => {
       return '正在思考...'
     case 'typing':
       return '正在输入中...'
+    // [!] 修改点: 添加新的 case
+    case 'processing':
+      return '正在整理思绪...'
     case 'idle':
     default:
       return '在线'

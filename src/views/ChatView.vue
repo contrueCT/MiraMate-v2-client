@@ -7,6 +7,7 @@ import ChatHeader from '@/components/ChatHeader.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
 import type { Message } from '@/core/types' // 导入Message类型
+import { webSocketService } from '@/core/services/socket'
 
 const chatStore = useChatStore()
 const { messages } = storeToRefs(chatStore)
@@ -35,28 +36,51 @@ watch(
   },
 )
 
+// function handleSendMessage(inputText: string) {
+//   if (!inputText.trim()) return
+
+//   chatStore.addMessage({
+//     sender: 'user',
+//     text: inputText,
+//   })
+
+//   // [!] 修改点: 完整模拟新的状态流程
+//   chatStore.setAIStatus('thinking')
+
+//   // 模拟网络延迟和AI思考
+//   setTimeout(() => {
+//     chatStore.startAIStreamingResponse('正在为您生成') // 开始流式输出，状态变为 typing
+
+//     let count = 0
+//     const interval = setInterval(() => {
+//       chatStore.appendToAIStreamingResponse(' ...' + count)
+//       count++
+//       if (count > 5) {
+//         // 模拟流式输出结束
+//         clearInterval(interval)
+//         chatStore.finishAIStreamingResponse() // 流式输出完成，状态变为 processing
+
+//         // 模拟同步后处理的耗时
+//         setTimeout(() => {
+//           chatStore.completeAIResponse() // 后处理完成，状态回归 idle
+//         }, 1500) // 模拟1.5秒的后处理时间
+//       }
+//     }, 300)
+//   }, 1000) // 模拟1秒的思考时间
+// }
+
 function handleSendMessage(inputText: string) {
   if (!inputText.trim()) return
 
+  // 1. 立即更新UI和状态
   chatStore.addMessage({
     sender: 'user',
     text: inputText,
   })
-
-  // 模拟AI响应 (这段可以保留用于测试)
   chatStore.setAIStatus('thinking')
-  setTimeout(() => {
-    chatStore.startAIStreamingResponse()
-    let count = 0
-    const interval = setInterval(() => {
-      chatStore.appendToAIStreamingResponse(' ...' + count)
-      count++
-      if (count > 5) {
-        clearInterval(interval)
-        chatStore.finishAIStreamingResponse()
-      }
-    }, 300)
-  }, 1000)
+
+  // 2. 调用 WebSocket 服务发送消息
+  webSocketService.sendMessage(inputText)
 }
 
 const router = useRouter()
