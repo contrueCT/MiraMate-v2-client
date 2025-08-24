@@ -3,6 +3,7 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '@/core/stores/chat'
 import { useRoute, useRouter } from 'vue-router'
+import WindowControls from '@/components/WindowControls.vue'
 import ChatHeader from '@/components/ChatHeader.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
@@ -123,8 +124,14 @@ function formatTimestamp(timestamp: number): string {
 
 <template>
   <div
-    class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end"
+    class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end rounded-window"
   >
+    <!-- 添加窗口控制按钮 -->
+    <WindowControls />
+
+    <!-- 增加一个间距 -->
+    <div class="pt-2"></div>
+
     <ChatHeader @open-settings="router.push('/settings')" />
 
     <main ref="messageContainer" class="flex-grow overflow-y-auto p-4 space-y-2 pb-48">
@@ -159,3 +166,12 @@ function formatTimestamp(timestamp: number): string {
     </RouterView>
   </div>
 </template>
+
+<style>
+/* 添加全局圆角样式 */
+.rounded-window {
+  border-radius: 6px; /* 减小圆角弧度 */
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+</style>

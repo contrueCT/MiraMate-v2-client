@@ -5,6 +5,13 @@
 export interface IElectronAPI {
   getConfig: () => Promise<string | null>
   saveConfig: (configString: string) => Promise<{ success: boolean; error?: string }>
+  // 添加窗口控制方法
+  minimizeWindow: () => void
+  maximizeWindow: () => void
+  closeWindow: () => void
+  // 添加窗口状态监听方法
+  onWindowMaximized: (callback: (isMaximized: boolean) => void) => void
+  removeWindowMaximizedListener: () => void
 }
 
 // 扩展全局的 Window 接口
