@@ -51,7 +51,7 @@ function onEmojiSelect(event: any) {
 }
 
 function sendMessage() {
-  if (!inputText.value.trim()) return
+  if (isSendDisabled.value) return
   emit('sendMessage', inputText.value)
   inputText.value = ''
 }

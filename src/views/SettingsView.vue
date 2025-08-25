@@ -91,11 +91,13 @@ const navItems = [
       class="w-[800px] h-[600px] bg-white/70 backdrop-blur-xl rounded-xl shadow-2xl flex flex-col overflow-hidden"
     >
       <!-- 标题栏 -->
-      <header class="flex-shrink-0 flex items-center justify-between p-3 border-b border-black/10">
+      <header
+        class="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200/50"
+      >
         <h1 class="text-lg font-semibold text-gray-800 ml-2">设置</h1>
         <button
           @click="closeSettings"
-          class="p-2 text-gray-500 hover:bg-black/10 rounded-full transition-colors"
+          class="p-2 text-gray-500 hover:bg-white/50 rounded-full transition-colors"
         >
           <IconClose :size="20" />
         </button>
@@ -104,13 +106,13 @@ const navItems = [
       <!-- 主体内容 -->
       <div class="flex flex-grow overflow-hidden">
         <!-- 左侧导航 -->
-        <nav class="w-[200px] flex-shrink-0 bg-black/5 p-4 space-y-1">
+        <nav class="w-[200px] flex-shrink-0 bg-white/30 p-4 space-y-1">
           <RouterLink
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
-            class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-black/10"
-            active-class="bg-blue-100 text-blue-700 font-semibold"
+            class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-white/50"
+            active-class="bg-blue-100/80 text-blue-700 font-semibold"
           >
             <component :is="item.icon" :size="20" />
             <span>{{ item.label }}</span>
@@ -134,11 +136,11 @@ const navItems = [
 
           <!-- 底部操作栏 -->
           <footer
-            class="flex-shrink-0 flex justify-end items-center space-x-4 p-4 border-t border-black/10"
+            class="flex-shrink-0 flex justify-end items-center space-x-4 p-4 border-t border-gray-200/50"
           >
             <button
               @click="closeSettings"
-              class="px-4 py-2 rounded-md hover:bg-black/10 transition-colors"
+              class="px-4 py-2 rounded-md hover:bg-white/50 transition-colors"
             >
               取消
             </button>

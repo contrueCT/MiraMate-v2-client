@@ -35,7 +35,7 @@ const statusText = computed(() => {
     class="flex-shrink-0 flex items-center justify-between p-4 bg-white/20 backdrop-blur-sm z-10"
   >
     <div class="flex items-center space-x-3">
-      <img src="https://i.pravatar.cc/40" alt="Avatar" class="w-10 h-10 rounded-full" />
+      <img src="@/assets/images/avatar.png" alt="Avatar" class="w-10 h-10 rounded-full" />
       <div>
         <!-- 从 settings store 读取AI名称 -->
         <h1 class="font-semibold text-gray-800">{{ conversation.aiName }}</h1>

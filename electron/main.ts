@@ -58,6 +58,7 @@ function createWindow() {
     width: 1200,
     height: 720,
     frame: false, // 移除默认窗口边框
+    icon: path.join(__dirname, '..', 'src', 'assets', 'images', 'favicon.ico'), // 设置应用图标
     webPreferences: {
       // 使用我们刚刚创建的、ESM安全的 __dirname
       preload: path.join(__dirname, 'preload.mjs'),
