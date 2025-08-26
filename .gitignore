@@ -17,6 +17,7 @@ coverage
 release
 /cypress/videos/
 /cypress/screenshots/
+dist-electron
 
 # Editor directories and files
 .vscode/*

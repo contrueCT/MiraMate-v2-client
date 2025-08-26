@@ -117,7 +117,6 @@ function createWindow() {
   } else {
     // 同样，使用ESM安全的 __dirname 来定位生产环境的 index.html
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
-    mainWindow.webContents.openDevTools()
   }
 }
 
