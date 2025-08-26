@@ -1,6 +1,6 @@
 {
   "name": "miramate-v2-client",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "main": "dist-electron/main.mjs",
   "private": true,
   "type": "module",
@@ -14,7 +14,11 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build-win": "npm run build && electron-builder --win",
+    "electron:build-mac": "npm run build && electron-builder --mac",
+    "electron:build-linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "emoji-picker-element": "^1.26.3",
@@ -31,6 +35,7 @@
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.21",
     "electron": "^37.3.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.31.0",
     "eslint-plugin-vue": "~10.3.0",
     "jiti": "^2.4.2",
@@ -44,5 +49,50 @@
     "vite-plugin-electron-renderer": "^0.14.6",
     "vite-plugin-vue-devtools": "^8.0.0",
     "vue-tsc": "^3.0.4"
+  },
+  "build": {
+    "appId": "com.miramate.app",
+    "productName": "MiraMate",
+    "copyright": "Copyright © 2025 MiraMate",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "icon": "src/assets/images/favicon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "icon": "src/assets/images/favicon.ico",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "icon": "src/assets/images/favicon.ico",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

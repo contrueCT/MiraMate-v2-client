@@ -1,8 +1,14 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import ChatView from '../views/ChatView.vue'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
+import ChatView from '@/views/ChatView.vue'
+
+const isDev = import.meta.env.DEV
+// 开发保持 history，生产改用 hash，避免 file:// 下 path 失配
+const history = isDev
+  ? createWebHistory(import.meta.env.BASE_URL)
+  : createWebHashHistory(import.meta.env.BASE_URL)
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history,
   routes: [
     {
       path: '/',

@@ -3,44 +3,50 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import electron from 'vite-plugin-electron/simple'
 
-export default defineConfig({
-  plugins: [
-    vue(),
-    electron({
-      main: {
-        entry: 'electron/main.ts',
-        // (可选) 为主进程也强制输出mjs
-        vite: {
-          build: {
-            rollupOptions: {
-              output: {
-                entryFileNames: '[name].mjs',
+// 使用函数形式以便按命令区分环境
+export default defineConfig(({ command }) => {
+  const isDev = command === 'serve'
+
+  return {
+    // 关键修改：生产环境用相对路径，避免在 file:// 协议下加载 /assets 失败
+    base: isDev ? '/' : './',
+
+    plugins: [
+      vue(),
+      electron({
+        main: {
+          entry: 'electron/main.ts',
+          vite: {
+            build: {
+              rollupOptions: {
+                output: {
+                  entryFileNames: '[name].mjs',
+                },
               },
             },
           },
         },
-      },
-      preload: {
-        input: fileURLToPath(new URL('./electron/preload.ts', import.meta.url)),
-        // 核心改动在这里：
-        // 强制 Vite 将预加载脚本打包成 ESM 格式，并输出为 .mjs 文件
-        vite: {
-          build: {
-            rollupOptions: {
-              output: {
-                // [name] 会被替换为 'preload'
-                entryFileNames: '[name].mjs',
+        preload: {
+          input: fileURLToPath(new URL('./electron/preload.ts', import.meta.url)),
+          vite: {
+            build: {
+              rollupOptions: {
+                output: {
+                  entryFileNames: '[name].mjs',
+                },
               },
             },
           },
         },
+        renderer: {},
+      }),
+    ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
-      renderer: {},
-    }),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
-  },
+    // 可保持默认 build，其它不改，保证最小修改
+    // build: { }
+  }
 })
