@@ -28,6 +28,7 @@ class WebSocketService {
       console.log('WebSocket connection established.')
       this.reconnectAttempts = 0
       // 可以在这里发送一个心跳或认证消息（如果后端需要）
+      serviceStore.wsConnected = true
     }
 
     this.ws.onmessage = (event) => {
@@ -36,10 +37,12 @@ class WebSocketService {
 
     this.ws.onerror = (error) => {
       console.error('WebSocket error:', error)
+      serviceStore.wsConnected = false
     }
 
     this.ws.onclose = (event) => {
       console.log(`WebSocket connection closed: ${event.code} ${event.reason}`)
+      serviceStore.wsConnected = false
       // 实现简单的指数退避重连
       if (this.reconnectAttempts < 5) {
         const timeout = Math.pow(2, this.reconnectAttempts) * 1000

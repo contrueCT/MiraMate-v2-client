@@ -20,6 +20,8 @@ export const useServiceStore = defineStore('service', () => {
   const environment = ref<'public' | 'local'>('public') // 默认为公网环境
   const connectionStatus = ref<'unconfigured' | 'testing' | 'success' | 'failed'>('unconfigured')
   const connectionError = ref<string>('')
+  // WebSocket 当前是否已连接（OPEN）
+  const wsConnected = ref<boolean>(false)
 
   // --- Actions ---
 
@@ -133,6 +135,7 @@ export const useServiceStore = defineStore('service', () => {
     environment,
     connectionStatus,
     connectionError,
+    wsConnected,
     loadAppConfig, // 重命名
     saveAppConfig, // 重命名
     testConnection,
