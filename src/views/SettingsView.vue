@@ -44,7 +44,7 @@ const originalState = computed(() => ({
   preferences: settingsStore.preferences,
 }))
 
-// 比较完整的 draft 和 originalState
+// 完整的 draft 和 originalState
 const hasChanges = computed(() => {
   return JSON.stringify(draft.value) !== JSON.stringify(originalState.value)
 })
