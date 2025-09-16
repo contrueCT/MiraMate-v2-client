@@ -21,11 +21,12 @@ const router = createRouter({
           component: () => import('@/views/SettingsView.vue'),
           // 设置页的子路由（左侧导航对应的内容）
           children: [
-            { path: '', redirect: '/settings/connection' }, // 默认重定向到新页面
+            // 默认重定向到新页面
+            { path: '', redirect: '/settings/connection' },
             {
               path: 'connection',
               component: () => import('@/components/settings/ServiceConnection.vue'),
-            }, // 新增路由
+            },
             {
               path: 'conversation',
               component: () => import('@/components/settings/ConversationSettings.vue'),

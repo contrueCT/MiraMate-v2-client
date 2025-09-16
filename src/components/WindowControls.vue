@@ -14,7 +14,6 @@ function handleMinimize() {
 function handleMaximize() {
   console.log('Maximize button clicked, current state:', isMaximized.value)
   window.electronAPI.maximizeWindow()
-  // 不在这里立即切换状态，而是等待主进程的通知
 }
 
 function handleClose() {
@@ -33,7 +32,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   console.log('WindowControls component unmounted')
-  // 清理监听器
   window.electronAPI.removeWindowMaximizedListener()
 })
 </script>
@@ -66,7 +64,7 @@ onUnmounted(() => {
   align-items: center;
   height: 32px;
   width: 100%;
-  -webkit-app-region: drag; /* 使整个顶部区域可拖动 */
+  -webkit-app-region: drag;
 }
 
 .drag-area {
@@ -78,7 +76,7 @@ onUnmounted(() => {
   display: flex;
   gap: 6px;
   padding-right: 10px;
-  -webkit-app-region: no-drag; /* 按钮区域不可拖动 */
+  -webkit-app-region: no-drag;
 }
 
 .control-button {
@@ -92,12 +90,12 @@ onUnmounted(() => {
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: rgba(107, 114, 128, 0.9); /* 使用更深的灰色 */
+  color: rgba(107, 114, 128, 0.9);
 }
 
 .control-button:hover {
   background-color: rgba(255, 255, 255, 0.15);
-  color: rgba(75, 85, 99, 1); /* 悬停时使用更深的颜色 */
+  color: rgba(75, 85, 99, 1);
 }
 
 .close:hover {

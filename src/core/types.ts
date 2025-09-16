@@ -1,5 +1,3 @@
-// src/core/types.ts
-
 /**
  * AI 的实时状态
  * - idle: 空闲，在线
@@ -35,7 +33,7 @@ export interface ModelConfig {
 export interface LLMConfig {
   model: string
   api_key: string
-  base_url?: string // 对于gemini可能没有
+  base_url?: string // 对于gemini没有
   api_type: 'openai' | 'gemini'
   model_kwargs?: Record<string, any> // 灵活的键值对
 }

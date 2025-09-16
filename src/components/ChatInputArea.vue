@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import 'emoji-picker-element'
-import { ref, computed } from 'vue' // 导入 computed
-import { useChatStore } from '@/core/stores/chat' // 导入 chat store
+import { ref, computed } from 'vue'
+import { useChatStore } from '@/core/stores/chat'
 import { storeToRefs } from 'pinia'
 
 import IconMic from '@/components/icons/IconMic.vue'
@@ -29,7 +29,7 @@ function togglePicker() {
   isPickerOpen.value = !isPickerOpen.value
 }
 
-// 4. 定义处理 emoji 点击事件的函数
+// 定义处理 emoji 点击事件的函数
 function onEmojiSelect(event: any) {
   const emoji = event.detail.unicode
   const textarea = textareaRef.value
@@ -58,11 +58,11 @@ function sendMessage() {
 </script>
 
 <template>
-  <!-- 5. 给父容器添加 position: relative，以便绝对定位picker -->
+  <!-- 给父容器添加 position: relative，以便绝对定位picker -->
   <div
     class="relative w-full bg-white/70 backdrop-blur-lg rounded-2xl p-3 shadow-lg transition-all duration-300 focus-within:shadow-2xl focus-within:ring-2 focus-within:ring-gray-300/50"
   >
-    <!-- 6. 将 ref 绑定到 textarea 上 -->
+    <!-- 将 ref 绑定到 textarea 上 -->
     <textarea
       ref="textareaRef"
       v-model="inputText"
@@ -79,7 +79,6 @@ function sendMessage() {
         <button class="p-2 text-gray-500 hover:bg-black/5 rounded-full transition-colors">
           <IconMic :size="22" />
         </button>
-        <!-- 7. 给Emoji按钮添加点击事件 -->
         <button
           @click="togglePicker"
           class="p-2 text-gray-500 hover:bg-black/5 rounded-full transition-colors"
@@ -102,7 +101,7 @@ function sendMessage() {
       </div>
     </div>
 
-    <!-- 8. Emoji Picker 组件 -->
+    <!-- Emoji Picker 组件 -->
     <div v-if="isPickerOpen" class="absolute bottom-full right-0 mb-2">
       <emoji-picker class="light" @emoji-click="onEmojiSelect"></emoji-picker>
     </div>

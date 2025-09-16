@@ -7,7 +7,7 @@ import WindowControls from '@/components/WindowControls.vue'
 import ChatHeader from '@/components/ChatHeader.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
-import type { Message } from '@/core/types' // 导入Message类型
+import type { Message } from '@/core/types'
 import { webSocketService } from '@/core/services/socket'
 
 const chatStore = useChatStore()
@@ -37,6 +37,7 @@ watch(
   },
 )
 
+// 保留旧的模拟函数以供参考
 // function handleSendMessage(inputText: string) {
 //   if (!inputText.trim()) return
 
@@ -45,7 +46,6 @@ watch(
 //     text: inputText,
 //   })
 
-//   // [!] 修改点: 完整模拟新的状态流程
 //   chatStore.setAIStatus('thinking')
 
 //   // 模拟网络延迟和AI思考
@@ -73,14 +73,14 @@ watch(
 function handleSendMessage(inputText: string) {
   if (!inputText.trim()) return
 
-  // 1. 立即更新UI和状态
+  // 立即更新UI和状态
   chatStore.addMessage({
     sender: 'user',
     text: inputText,
   })
   chatStore.setAIStatus('thinking')
 
-  // 2. 调用 WebSocket 服务发送消息
+  // 调用 WebSocket 服务发送消息
   webSocketService.sendMessage(inputText)
 }
 
@@ -88,7 +88,7 @@ const router = useRouter()
 const route = useRoute()
 const isSettingsOpen = computed(() => route.path.startsWith('/settings'))
 
-// --- 新增：时间处理逻辑 ---
+// 时间处理逻辑
 
 const TEN_MINUTES_IN_MS = 10 * 60 * 1000
 
@@ -126,21 +126,15 @@ function formatTimestamp(timestamp: number): string {
   <div
     class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end rounded-window"
   >
-    <!-- 添加窗口控制按钮 -->
+    <!-- 窗口控制按钮 -->
     <WindowControls />
 
-    <!-- 增加一个间距 -->
+    <!-- 间距 -->
     <div class="pt-2"></div>
 
     <ChatHeader @open-settings="router.push('/settings')" />
 
     <main ref="messageContainer" class="flex-grow overflow-y-auto p-4 space-y-2 pb-48">
-      <!-- 
-        核心改动在这里：
-        - 我们使用 <template> 标签进行 v-for 循环，这样可以包裹多个元素（时间戳和消息气泡）。
-        - 在循环中，我们获取 message 和 index。
-        - v-if 指令调用我们新创建的 shouldShowTimestamp 函数来决定是否显示时间戳。
-      -->
       <template v-for="(message, index) in messages" :key="message.id">
         <!-- 时间戳显示区域 -->
         <div
@@ -168,9 +162,9 @@ function formatTimestamp(timestamp: number): string {
 </template>
 
 <style>
-/* 添加全局圆角样式 */
+/* 全局圆角样式 */
 .rounded-window {
-  border-radius: 6px; /* 减小圆角弧度 */
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }

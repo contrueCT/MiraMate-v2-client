@@ -77,7 +77,7 @@ export const useChatStore = defineStore('chat', () => {
     startAIStreamingResponse,
     appendToAIStreamingResponse,
     finishAIStreamingResponse,
-    completeAIResponse, // 导出新 action
+    completeAIResponse,
     setAIStatus,
   }
 })

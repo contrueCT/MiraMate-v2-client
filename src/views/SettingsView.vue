@@ -5,35 +5,34 @@ import { useSettingsStore } from '@/core/stores/settings'
 import { useServiceStore } from '@/core/stores/service'
 import { backendToFrontend, frontendToBackend } from '@/core/services/configAdapter'
 
-// 导入所有需要的图标
 import IconServiceConnection from '@/components/icons/IconServiceConnection.vue'
 import IconConversation from '@/components/icons/IconConversation.vue'
 import IconModel from '@/components/icons/IconModel.vue'
 import IconPreferences from '@/components/icons/IconPreferences.vue'
 import IconClose from '@/components/icons/IconClose.vue'
 
-// 1. 实例化所有的Store
+// 实例化所有的Store
 const settingsStore = useSettingsStore()
 const serviceStore = useServiceStore()
 const router = useRouter()
 
-// 2. 创建一个包含所有设置项的、完整的本地草稿(draft)
+// 创建一个包含所有设置项的、完整的本地草稿(draft)
 const draft = ref({
-  // a. 来自 serviceStore 的服务配置
+  // 来自 serviceStore 的服务配置
   service: {
     url: serviceStore.endpointUrl,
     key: serviceStore.authKey,
     env: serviceStore.environment,
   },
-  // b. 来自 settingsStore 的对话设定
+  // 来自 settingsStore 的对话设定
   conversation: JSON.parse(JSON.stringify(settingsStore.conversation)),
-  // c. 来自 settingsStore 的模型设定 (经过转换)
+  // 来自 settingsStore 的模型设定 (经过转换)
   models: backendToFrontend(settingsStore.llmConfigs),
-  // d. 来自 settingsStore 的应用偏好
+  // 来自 settingsStore 的应用偏好
   preferences: JSON.parse(JSON.stringify(settingsStore.preferences)),
 })
 
-// 3. 创建一个包含所有原始状态的计算属性，用于比较变更
+// 创建一个包含所有原始状态的计算属性，用于比较变更
 const originalState = computed(() => ({
   service: {
     url: serviceStore.endpointUrl,
@@ -45,17 +44,17 @@ const originalState = computed(() => ({
   preferences: settingsStore.preferences,
 }))
 
-// 4. `hasChanges` 计算属性，现在会比较完整的 draft 和 originalState
+// 比较完整的 draft 和 originalState
 const hasChanges = computed(() => {
   return JSON.stringify(draft.value) !== JSON.stringify(originalState.value)
 })
 
-// 5. 关闭模态框的函数
+// 关闭模态框的函数
 function closeSettings() {
   router.push('/')
 }
 
-// 6. 保存所有更改的函数
+// 保存所有更改的函数
 function handleSave() {
   if (hasChanges.value) {
     // 保存对话和模型配置 (需要转换回后端格式)
@@ -64,7 +63,7 @@ function handleSave() {
       llm: frontendToBackend(draft.value.models),
     })
 
-    // 调用 serviceStore 的新 action 进行统一保存。
+    // 统一保存服务连接配置
     serviceStore.saveAppConfig({
       service: draft.value.service,
       preferences: draft.value.preferences,
@@ -76,7 +75,6 @@ function handleSave() {
   closeSettings()
 }
 
-// 7. 更新导航栏，包含所有四个项目
 const navItems = [
   { path: '/settings/connection', icon: IconServiceConnection, label: '服务连接' },
   { path: '/settings/conversation', icon: IconConversation, label: '对话设定' },
@@ -124,11 +122,7 @@ const navItems = [
           <div class="flex-grow p-6 overflow-y-auto">
             <RouterView v-slot="{ Component }">
               <Transition name="content-fade" mode="out-in">
-                <!-- 
-                  将完整的 draft 作为 v-model 传递给子组件。
-                  每个子组件(如ServiceConnection.vue, ConversationSettings.vue) 
-                  内部只会修改 draft 中属于自己的那一部分，例如 draft.service 或 draft.conversation。
-                -->
+                <!-- 将完整的 draft 作为 v-model 传递给子组件。-->
                 <component :is="Component" v-model:draft="draft" />
               </Transition>
             </RouterView>

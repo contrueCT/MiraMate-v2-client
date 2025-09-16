@@ -4,14 +4,13 @@ import type { LLMConfig } from '@/core/types'
 import { validateAndSanitizeLLMConfigs } from '@/core/services/configAdapter'
 import { apiClient } from '@/core/services/apiClient'
 
-// 为与后端交互的数据定义一个接口
+// 定义后端通信数据接口
 interface ServerSettings {
   conversation: {
     aiName: string
     userAlias: string
     persona: string
   }
-  // 现在直接使用LLMConfig数组
   llm: LLMConfig[]
 }
 
@@ -25,7 +24,6 @@ export const useSettingsStore = defineStore('settings', () => {
     enableNotifications: true,
   })
 
-  // (UX增强) 新增一个状态来追踪配置的加载情况
   const configStatus = ref<'idle' | 'loaded' | 'partial' | 'error'>('idle')
 
   function loadPreferences(persistedPrefs: any) {
@@ -35,8 +33,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // --- Actions ---
   /**
-   * [!] 核心修复:
-   * 重构为一个统一的、加载所有远程配置的 action
+   * 统一的、加载所有远程配置的 action
    */
   async function loadRemoteSettings() {
     try {
@@ -52,13 +49,12 @@ export const useSettingsStore = defineStore('settings', () => {
 
       // 更新LLM配置的加载状态
       if (!llmResponse) {
-        // (根据Promise.all特性，这里其实不太会发生，除非apiClient内部逻辑改变)
       } else if (Array.isArray(llmResponse) && sanitized.length < llmResponse.length) {
         configStatus.value = 'partial'
       } else if (sanitized.length > 0) {
         configStatus.value = 'loaded'
       } else {
-        configStatus.value = 'error' // 如果净化后为空，也视为错误
+        configStatus.value = 'error'
       }
 
       // --- 处理 Environment (对话设定) 配置 ---
@@ -111,12 +107,10 @@ export const useSettingsStore = defineStore('settings', () => {
       ])
 
       console.log('Remote settings saved successfully.')
-      // 可以在这里触发一个全局的成功通知
+      // TODO: 这里触发一个全局的成功通知
     } catch (error) {
       console.error('Failed to save remote settings:', error)
-      // 可以在这里触发一个全局的失败通知
-      // 注意：乐观更新下，如果保存失败，UI上看起来是保存成功了。
-      // 一个更复杂的实现可以考虑在这里“回滚”状态，但这通常需要更复杂的UI/UX来处理。
+      // TODO: 这里触发一个全局的失败通知, 或乐观更新的回滚
     }
   }
 

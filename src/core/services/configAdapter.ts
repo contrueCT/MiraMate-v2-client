@@ -6,22 +6,21 @@ import type { LLMConfig, UIModelConfig } from '@/core/types'
  * @returns 一个保证类型安全且干净的 LLMConfig 数组。
  */
 export function validateAndSanitizeLLMConfigs(rawData: any): LLMConfig[] {
-  // 1. 检查输入是否为数组
   if (!Array.isArray(rawData)) {
     console.warn('Invalid LLM config format: data is not an array.', rawData)
-    return [] // 返回空数组，表示没有有效的配置
+    return [] // 返回空数组
   }
 
   const sanitizedConfigs: LLMConfig[] = []
 
   for (const item of rawData) {
-    // 2. 检查每个元素是否为对象
+    // 检查每个元素是否为对象
     if (typeof item !== 'object' || item === null) {
       console.warn('Skipping invalid item in LLM config: not an object.', item)
       continue
     }
 
-    // 3. 提取并校验核心字段
+    // 解构并检查必需字段的类型
     const { model, api_key, base_url, api_type, model_kwargs } = item
 
     // `api_type` 是最重要的，必须有效
@@ -36,14 +35,14 @@ export function validateAndSanitizeLLMConfigs(rawData: any): LLMConfig[] {
       continue
     }
 
-    // 4. 构建一个干净的对象，只包含我们认识的字段
+    // 重新构建对象
     const sanitizedConfig: LLMConfig = {
       api_type,
       model,
       api_key,
     }
 
-    // 5. 安全地处理可选字段
+    // 安全地处理可选字段
     if (typeof base_url === 'string') {
       sanitizedConfig.base_url = base_url
     }

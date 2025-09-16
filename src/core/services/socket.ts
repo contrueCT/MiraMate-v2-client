@@ -27,7 +27,6 @@ class WebSocketService {
     this.ws.onopen = () => {
       console.log('WebSocket connection established.')
       this.reconnectAttempts = 0
-      // 可以在这里发送一个心跳或认证消息（如果后端需要）
       serviceStore.wsConnected = true
     }
 
@@ -43,7 +42,7 @@ class WebSocketService {
     this.ws.onclose = (event) => {
       console.log(`WebSocket connection closed: ${event.code} ${event.reason}`)
       serviceStore.wsConnected = false
-      // 实现简单的指数退避重连
+      // 简单的指数退避重连
       if (this.reconnectAttempts < 5) {
         const timeout = Math.pow(2, this.reconnectAttempts) * 1000
         console.log(`Attempting to reconnect in ${timeout / 1000}s...`)
@@ -62,8 +61,6 @@ class WebSocketService {
 
       switch (message.type) {
         case 'chat_stream_start':
-          // 后端已确认开始，前端状态应为 thinking 或 typing
-          // 通常在发送消息时已设为thinking，这里可以不操作或设为typing
           chatStore.setAIStatus('typing')
           break
 
@@ -77,7 +74,7 @@ class WebSocketService {
           break
 
         case 'chat_response':
-          // 流式结束后，元数据和完整响应会在这里。我们用它来触发后处理状态
+          // 触发后处理状态
           chatStore.finishAIStreamingResponse()
           break
 
@@ -93,8 +90,8 @@ class WebSocketService {
 
         case 'error':
           console.error('Received error from WebSocket:', message.data)
-          // 可以在这里添加一个action来在UI上显示错误消息
-          chatStore.completeAIResponse() // 无论如何，结束当前轮次
+          // TODO: 后期考虑在UI上显示错误
+          chatStore.completeAIResponse()
           break
 
         default:
@@ -114,17 +111,15 @@ class WebSocketService {
       this.ws.send(JSON.stringify(message))
     } else {
       console.error('WebSocket is not connected. Cannot send message.')
-      // 可以在这里提示用户连接已断开
     }
   }
 
   public disconnect() {
     if (this.ws) {
-      this.reconnectAttempts = 999 // 防止自动重连
+      this.reconnectAttempts = 999
       this.ws.close()
     }
   }
 }
 
-// 导出一个单例
 export const webSocketService = new WebSocketService()
