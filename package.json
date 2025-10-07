@@ -18,13 +18,23 @@
     "electron:build": "npm run build && electron-builder",
     "electron:build-win": "npm run build && electron-builder --win",
     "electron:build-mac": "npm run build && electron-builder --mac",
-    "electron:build-linux": "npm run build && electron-builder --linux"
+    "electron:build-linux": "npm run build && electron-builder --linux",
+    "mobile:dev": "vite --mode mobile",
+    "mobile:build": "vue-tsc && vite build --mode mobile",
+    "cap:init": "cap init",
+    "cap:add:android": "cap add android",
+    "cap:sync": "npm run build && cap sync",
+    "cap:open:android": "cap open android",
+    "cap:copy": "cap copy"
   },
   "dependencies": {
     "emoji-picker-element": "^1.26.3",
     "pinia": "^3.0.3",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/preferences": "^6.0.3",
+    "@capacitor/local-notifications": "^6.1.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
@@ -33,6 +43,8 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/tsconfig": "^0.7.0",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/android": "^6.1.2",
     "autoprefixer": "^10.4.21",
     "electron": "^37.3.0",
     "electron-builder": "^26.0.12",

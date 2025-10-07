@@ -3,14 +3,7 @@ import { defineStore } from 'pinia'
 import { useSettingsStore } from './settings' // 导入 settings store
 import { apiClient } from '@/core/services/apiClient'
 import { webSocketService } from '@/core/services/socket'
-
-const api = window.electronAPI || {
-  getConfig: async () => localStorage.getItem('mira-config'), // 文件名统一
-  saveConfig: async (config: string) => {
-    localStorage.setItem('mira-config', config)
-    return { success: true }
-  },
-}
+import { configStorage } from '@/platform/storage'
 
 export const useServiceStore = defineStore('service', () => {
   // --- State ---
@@ -41,7 +34,7 @@ export const useServiceStore = defineStore('service', () => {
   async function loadAppConfig() {
     const settingsStore = useSettingsStore()
 
-    const configString = await api.getConfig()
+    const configString = await configStorage.get()
     if (configString) {
       try {
         const parsedConfig = JSON.parse(configString)
@@ -84,7 +77,7 @@ export const useServiceStore = defineStore('service', () => {
 
     const configString = JSON.stringify(configToSave, null, 2)
 
-    const result = await api.saveConfig(configString)
+    const result = await configStorage.set(configString)
     if (!result.success) {
       console.error('Failed to save app config:', result.error)
     }

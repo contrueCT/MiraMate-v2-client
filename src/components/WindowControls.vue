@@ -8,23 +8,23 @@ const isMaximized = ref(false)
 
 function handleMinimize() {
   console.log('Minimize button clicked')
-  window.electronAPI.minimizeWindow()
+  window.electronAPI?.minimizeWindow?.()
 }
 
 function handleMaximize() {
   console.log('Maximize button clicked, current state:', isMaximized.value)
-  window.electronAPI.maximizeWindow()
+  window.electronAPI?.maximizeWindow?.()
 }
 
 function handleClose() {
   console.log('Close button clicked')
-  window.electronAPI.closeWindow()
+  window.electronAPI?.closeWindow?.()
 }
 
 onMounted(() => {
   console.log('WindowControls component mounted')
   // 监听窗口最大化状态变化
-  window.electronAPI.onWindowMaximized((maximized) => {
+  window.electronAPI?.onWindowMaximized?.((maximized) => {
     console.log('Window maximized state changed:', maximized)
     isMaximized.value = maximized
   })
@@ -32,7 +32,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   console.log('WindowControls component unmounted')
-  window.electronAPI.removeWindowMaximizedListener()
+  window.electronAPI?.removeWindowMaximizedListener?.()
 })
 </script>
 

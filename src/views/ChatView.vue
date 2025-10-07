@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useChatStore } from '@/core/stores/chat'
 import { useRoute, useRouter } from 'vue-router'
 import WindowControls from '@/components/WindowControls.vue'
+import { isElectron } from '@/platform/env'
 import ChatHeader from '@/components/ChatHeader.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
 import ChatInputArea from '@/components/ChatInputArea.vue'
@@ -126,8 +127,8 @@ function formatTimestamp(timestamp: number): string {
   <div
     class="relative flex flex-col h-screen overflow-hidden bg-gradient-to-br from-mira-bg-start to-mira-bg-end rounded-window"
   >
-    <!-- 窗口控制按钮 -->
-    <WindowControls />
+    <!-- 窗口控制按钮（仅桌面端 Electron 渲染） -->
+    <WindowControls v-if="isElectron" />
 
     <!-- 间距 -->
     <div class="pt-2"></div>
