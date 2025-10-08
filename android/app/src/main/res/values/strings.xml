@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">miramate-v2-client</string>
-    <string name="title_activity_main">miramate-v2-client</string>
+    <string name="app_name">MiraMate</string>
+    <string name="title_activity_main">MiraMate</string>
     <string name="package_name">com.contrue.miramate</string>
     <string name="custom_url_scheme">com.contrue.miramate</string>
 </resources>

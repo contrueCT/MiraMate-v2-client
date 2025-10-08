@@ -6,7 +6,9 @@ interface ApiHeaders {
   [key: string]: string | undefined
 }
 
-export async function apiClient(endpoint: string, options: RequestInit = {}) {
+type ExtendedRequestInit = RequestInit & { __skipAuth?: boolean }
+
+export async function apiClient(endpoint: string, options: ExtendedRequestInit = {}) {
   const serviceStore = useServiceStore()
   const { endpointUrl, authKey, environment } = serviceStore
 
@@ -15,12 +17,16 @@ export async function apiClient(endpoint: string, options: RequestInit = {}) {
   }
 
   const headers: ApiHeaders = {
-    'Content-Type': 'application/json',
     ...(options.headers as ApiHeaders),
   }
 
+  // 仅当存在 body 且未显式指定时设置 JSON Content-Type，避免无谓的 CORS 预检
+  if (options.body && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json'
+  }
+
   // 只有在公网环境下才添加鉴权头
-  if (environment === 'public') {
+  if (environment === 'public' && !options.__skipAuth) {
     headers.Authorization = `Bearer ${authKey}`
   }
 

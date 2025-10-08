@@ -15,8 +15,10 @@ function handleTestConnection() {
 <template>
   <div class="space-y-6">
     <div>
-      <h2 class="text-xl font-bold">后端服务配置</h2>
-      <p class="text-sm text-gray-600 mt-1">在这里配置你的自定义后端服务，以便与AI进行通信。</p>
+      <h2 class="text-xl md:text-xl font-bold">后端服务配置</h2>
+      <p class="text-sm md:text-sm text-gray-600 mt-1">
+        在这里配置你的自定义后端服务，以便与AI进行通信。
+      </p>
     </div>
 
     <div>
@@ -25,7 +27,7 @@ function handleTestConnection() {
         <button
           @click="draft.service.env = 'public'"
           :class="[
-            'px-3 py-1 text-sm rounded-md transition-colors',
+            'px-4 py-2 md:px-3 md:py-1 text-sm rounded-md transition-colors',
             draft.service.env === 'public' ? 'bg-white shadow' : '',
           ]"
         >
@@ -34,7 +36,7 @@ function handleTestConnection() {
         <button
           @click="draft.service.env = 'local'"
           :class="[
-            'px-3 py-1 text-sm rounded-md transition-colors',
+            'px-4 py-2 md:px-3 md:py-1 text-sm rounded-md transition-colors',
             draft.service.env === 'local' ? 'bg-white shadow' : '',
           ]"
         >
@@ -49,7 +51,7 @@ function handleTestConnection() {
         type="text"
         v-model="draft.service.url"
         placeholder="例如: https://api.yourdomain.com"
-        class="w-full mt-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+        class="w-full mt-1 p-3 md:p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
 
@@ -58,14 +60,14 @@ function handleTestConnection() {
       <input
         type="password"
         v-model="draft.service.key"
-        class="w-full mt-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+        class="w-full mt-1 p-3 md:p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
 
-    <div class="flex items-center space-x-4">
+    <div class="flex items-center gap-4">
       <button
         @click="handleTestConnection"
-        class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+        class="px-5 py-3 md:px-4 md:py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
       >
         {{ connectionStatus === 'testing' ? '测试中...' : '连接测试' }}
       </button>

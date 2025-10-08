@@ -4,6 +4,7 @@ import { useChatStore } from '@/core/stores/chat'
 class WebSocketService {
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
+  private lifecycleListenersBound = false
 
   public connect() {
     const serviceStore = useServiceStore()
@@ -52,6 +53,38 @@ class WebSocketService {
         console.error('WebSocket reconnect attempts exhausted.')
       }
     }
+
+    // 绑定通用生命周期监听（一次性）
+    if (!this.lifecycleListenersBound) {
+      this.bindLifecycleReconnect()
+      this.lifecycleListenersBound = true
+    }
+  }
+
+  private bindLifecycleReconnect() {
+    const serviceStore = useServiceStore()
+
+    const tryReconnect = () => {
+      // 仅在有配置且未连接时触发重连
+      const shouldConnect =
+        !!serviceStore.endpointUrl && (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      if (shouldConnect) {
+        console.log('[Lifecycle] Triggering reconnect...')
+        this.connect()
+      }
+    }
+
+    // 页面从后台回到前台
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        tryReconnect()
+      }
+    })
+
+    // 网络从离线恢复到在线
+    window.addEventListener('online', () => {
+      tryReconnect()
+    })
   }
 
   private handleMessage(data: string) {

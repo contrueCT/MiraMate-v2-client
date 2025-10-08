@@ -86,30 +86,32 @@ const navItems = [
 <template>
   <div class="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 flex items-center justify-center">
     <div
-      class="w-[800px] h-[600px] bg-white/70 backdrop-blur-xl rounded-xl shadow-2xl flex flex-col overflow-hidden"
+      class="bg-white/70 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden w-full h-full rounded-none md:w-[800px] md:h-[600px] md:rounded-xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
       <!-- 标题栏 -->
       <header
-        class="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-200/50"
+        class="flex-shrink-0 flex items-center justify-between p-4 md:p-3 border-b border-gray-200/50"
       >
         <h1 class="text-lg font-semibold text-gray-800 ml-2">设置</h1>
         <button
           @click="closeSettings"
-          class="p-2 text-gray-500 hover:bg-white/50 rounded-full transition-colors"
+          class="p-3 md:p-2 text-gray-500 hover:bg-white/50 rounded-full transition-colors"
         >
           <IconClose :size="20" />
         </button>
       </header>
 
       <!-- 主体内容 -->
-      <div class="flex flex-grow overflow-hidden">
-        <!-- 左侧导航 -->
-        <nav class="w-[200px] flex-shrink-0 bg-white/30 p-4 space-y-1">
+      <div class="flex flex-col md:flex-row flex-grow overflow-hidden">
+        <!-- 左侧导航（移动端为顶部横向标签） -->
+        <nav
+          class="bg-white/30 p-3 md:p-4 flex-shrink-0 w-full md:w-[200px] md:space-y-1 md:overflow-y-auto flex md:block gap-2 overflow-x-auto"
+        >
           <RouterLink
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
-            class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-white/50"
+            class="flex items-center space-x-3 px-4 py-3 md:px-3 md:py-2 rounded-md text-gray-700 transition-colors hover:bg-white/50 whitespace-nowrap"
             active-class="bg-blue-100/80 text-blue-700 font-semibold"
           >
             <component :is="item.icon" :size="20" />
@@ -119,7 +121,7 @@ const navItems = [
 
         <!-- 右侧内容区 -->
         <main class="flex-grow flex flex-col overflow-hidden">
-          <div class="flex-grow p-6 overflow-y-auto">
+          <div class="flex-grow p-5 md:p-6 overflow-y-auto">
             <RouterView v-slot="{ Component }">
               <Transition name="content-fade" mode="out-in">
                 <!-- 将完整的 draft 作为 v-model 传递给子组件。-->
@@ -130,18 +132,18 @@ const navItems = [
 
           <!-- 底部操作栏 -->
           <footer
-            class="flex-shrink-0 flex justify-end items-center space-x-4 p-4 border-t border-gray-200/50"
+            class="flex-shrink-0 flex justify-end md:justify-end items-center gap-4 p-4 md:p-4 border-t border-gray-200/50"
           >
             <button
               @click="closeSettings"
-              class="px-4 py-2 rounded-md hover:bg-white/50 transition-colors"
+              class="px-5 py-3 md:px-4 md:py-2 rounded-md hover:bg-white/50 transition-colors"
             >
               取消
             </button>
             <button
               @click="handleSave"
               :disabled="!hasChanges"
-              class="px-4 py-2 rounded-md bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              class="px-5 py-3 md:px-4 md:py-2 rounded-md bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               保存更改
             </button>

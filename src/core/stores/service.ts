@@ -94,8 +94,8 @@ export const useServiceStore = defineStore('service', () => {
     }
 
     try {
-      // 测试连接
-      const health = await apiClient('/api/health')
+      // 测试连接（不带鉴权，避免 CORS 预检影响本地/内网调试）
+      const health = await apiClient('/api/health', { __skipAuth: true })
 
       if ((health && health.status === 'healthy') || health.status === 'partial') {
         connectionStatus.value = 'success'
