@@ -1,5 +1,6 @@
 import { useServiceStore } from '@/core/stores/service'
 import { useChatStore } from '@/core/stores/chat'
+import { createAuthedWebSocket } from './wsClient'
 
 class WebSocketService {
   private ws: WebSocket | null = null
@@ -15,15 +16,13 @@ class WebSocketService {
       return
     }
 
-    // 将 http:// 或 https:// 替换为 ws:// 或 wss://
-    const wsUrl = endpointUrl.replace(/^(http)/, 'ws') + '/ws'
-
     // 如果存在旧的连接，先关闭
     if (this.ws) {
       this.ws.close()
     }
 
-    this.ws = new WebSocket(wsUrl)
+    // 使用统一的带鉴权 WS 客户端
+    this.ws = createAuthedWebSocket('/ws')
 
     this.ws.onopen = () => {
       console.log('WebSocket connection established.')

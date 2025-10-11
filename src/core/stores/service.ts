@@ -94,17 +94,29 @@ export const useServiceStore = defineStore('service', () => {
     }
 
     try {
-      // 测试连接（不带鉴权，避免 CORS 预检影响本地/内网调试）
+      // 1) 健康检查（不带鉴权，避免 CORS 预检影响本地/内网调试）
       const health = await apiClient('/api/health', { __skipAuth: true })
 
       if ((health && health.status === 'healthy') || health.status === 'partial') {
+        // 2) 公网环境需要验证鉴权是否有效
+        if (environment.value === 'public') {
+          try {
+            // 选择一个现有的受保护轻量接口进行验证
+            await apiClient('/api/config/environment')
+          } catch (err) {
+            connectionStatus.value = 'failed'
+            connectionError.value = '鉴权失败：请检查鉴权密钥是否正确或是否有权限。'
+            return
+          }
+        }
+
+        // 3) 均通过则标记成功并加载远端配置
         connectionStatus.value = 'success'
-        // 连接成功后，触发加载服务器配置
         const settingsStore = useSettingsStore()
         settingsStore.loadRemoteSettings()
       } else {
         connectionStatus.value = 'failed'
-        connectionError.value = `服务异常: ${health.status}`
+        connectionError.value = `服务异常: ${health?.status ?? 'unknown'}`
       }
     } catch (error) {
       connectionStatus.value = 'failed'
