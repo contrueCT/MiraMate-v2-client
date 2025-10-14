@@ -6,8 +6,10 @@ class WebSocketService {
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
   private lifecycleListenersBound = false
+  private keepAliveTimer: number | null = null
+  private lastConnectTs = 0
 
-  public connect() {
+  public connect(force: boolean = false) {
     const serviceStore = useServiceStore()
     const { endpointUrl, authKey, environment } = serviceStore
 
@@ -16,10 +18,33 @@ class WebSocketService {
       return
     }
 
-    // 如果存在旧的连接，先关闭
+    // 若已有连接且处于 OPEN 或 CONNECTING，避免重复发起连接，减少抖动
     if (this.ws) {
-      this.ws.close()
+      if (force) {
+        try {
+          this.ws.close()
+        } catch {}
+        this.ws = null
+      } else {
+        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+          console.log('WebSocket already open/connecting. Skip connect.')
+          return
+        }
+        // 对于 CLOSING/CLOSED，清理引用，稍后重新创建
+        try {
+          this.ws.close()
+        } catch {}
+        this.ws = null
+      }
     }
+
+    // 简易节流：避免在极短时间内重复 connect（移动端前后台切换/网络抖动时尤为常见）
+    const now = Date.now()
+    if (!force && now - this.lastConnectTs < 1500) {
+      console.log('WebSocket connect debounced.')
+      return
+    }
+    this.lastConnectTs = now
 
     // 使用统一的带鉴权 WS 客户端
     this.ws = createAuthedWebSocket('/ws')
@@ -28,6 +53,20 @@ class WebSocketService {
       console.log('WebSocket connection established.')
       this.reconnectAttempts = 0
       serviceStore.wsConnected = true
+
+      // 启动心跳保活：浏览器不支持原生 ping 帧，使用应用层 ping/pong
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer)
+      }
+      this.keepAliveTimer = window.setInterval(() => {
+        try {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'ping' }))
+          }
+        } catch (e) {
+          // 发送异常忽略；等待 onclose/onerror 触发重连
+        }
+      }, 25000)
     }
 
     this.ws.onmessage = (event) => {
@@ -42,6 +81,11 @@ class WebSocketService {
     this.ws.onclose = (event) => {
       console.log(`WebSocket connection closed: ${event.code} ${event.reason}`)
       serviceStore.wsConnected = false
+      // 清理保活定时器
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer)
+        this.keepAliveTimer = null
+      }
       // 简单的指数退避重连
       if (this.reconnectAttempts < 5) {
         const timeout = Math.pow(2, this.reconnectAttempts) * 1000
@@ -149,7 +193,12 @@ class WebSocketService {
   public disconnect() {
     if (this.ws) {
       this.reconnectAttempts = 999
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer)
+        this.keepAliveTimer = null
+      }
       this.ws.close()
+      this.ws = null
     }
   }
 }

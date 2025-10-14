@@ -13,6 +13,8 @@ export const useServiceStore = defineStore('service', () => {
   const connectionStatus = ref<'unconfigured' | 'testing' | 'success' | 'failed'>('unconfigured')
   const connectionError = ref<string>('')
   const wsConnected = ref<boolean>(false)
+  // 测试锁：连接测试进行中时，暂不触发 WebSocket 连接，避免干扰后端日志与判断
+  const testingLock = ref<boolean>(false)
 
   // --- Actions ---
 
@@ -21,13 +23,36 @@ export const useServiceStore = defineStore('service', () => {
     // 当URL真的发生变化，并且新URL不为空时才操作
     if (newUrl && newUrl !== oldUrl) {
       console.log(`Endpoint URL changed to: ${newUrl}. Reconnecting WebSocket.`)
-      // 调用连接
-      webSocketService.connect()
+      // 测试中不触发 WS 连接，避免后端出现 Invalid HTTP request 日志
+      if (!testingLock.value) {
+        // 强制重连：确保切换到新地址
+        webSocketService.connect(true)
+      }
       const settingsStore = useSettingsStore()
       settingsStore.loadRemoteSettings()
     } else if (!newUrl && oldUrl) {
       console.log('Endpoint URL cleared. Disconnecting WebSocket.')
       webSocketService.disconnect()
+    }
+  })
+
+  // 监听 authKey 变化：在公网环境下需要携带 token，变更后强制重连以更新连接 URL
+  watch(authKey, (newKey, oldKey) => {
+    if (newKey !== oldKey) {
+      if (!testingLock.value && endpointUrl.value) {
+        console.log('Auth key changed. Forcing WebSocket reconnect.')
+        webSocketService.connect(true)
+      }
+    }
+  })
+
+  // 监听 environment 变化：公网/本地切换需要调整是否携带 token
+  watch(environment, (newEnv, oldEnv) => {
+    if (newEnv !== oldEnv) {
+      if (!testingLock.value && endpointUrl.value) {
+        console.log(`Environment changed (${oldEnv} -> ${newEnv}). Forcing WebSocket reconnect.`)
+        webSocketService.connect(true)
+      }
     }
   })
 
@@ -83,44 +108,80 @@ export const useServiceStore = defineStore('service', () => {
     }
   }
 
-  async function testConnection() {
+  /**
+   * 使用外部提供的草稿参数进行连接测试（不保存、不改变 store 值、不建立 WS）。
+   */
+  async function testConnectionWithOverride(params: {
+    url: string
+    key: string
+    env: 'public' | 'local'
+  }) {
     connectionStatus.value = 'testing'
     connectionError.value = ''
+    testingLock.value = true
 
-    if (!endpointUrl.value) {
+    const testUrl = (params.url || '').trim()
+    const testEnv = params.env
+    const testKey = (params.key || '').trim()
+
+    if (!testUrl) {
       connectionStatus.value = 'failed'
       connectionError.value = '服务地址不能为空。'
+      testingLock.value = false
       return
     }
 
     try {
-      // 1) 健康检查（不带鉴权，避免 CORS 预检影响本地/内网调试）
-      const health = await apiClient('/api/health', { __skipAuth: true })
-
-      if ((health && health.status === 'healthy') || health.status === 'partial') {
-        // 2) 公网环境需要验证鉴权是否有效
-        if (environment.value === 'public') {
-          try {
-            // 选择一个现有的受保护轻量接口进行验证
-            await apiClient('/api/config/environment')
-          } catch (err) {
-            connectionStatus.value = 'failed'
-            connectionError.value = '鉴权失败：请检查鉴权密钥是否正确或是否有权限。'
-            return
-          }
+      // 1) 健康检查（不带鉴权）——直接用 fetch，避免拼接依赖 store.endpointUrl
+      console.log(
+        '[TestOverride] Hitting health endpoint:',
+        `${testUrl.replace(/\/+$/, '')}/api/health`,
+      )
+      let healthOk = false
+      try {
+        const res = await fetch(`${testUrl.replace(/\/+$/, '')}/api/health`)
+        if (res.ok) {
+          const json = await res.json()
+          healthOk = json && (json.status === 'healthy' || json.status === 'partial')
         }
-
-        // 3) 均通过则标记成功并加载远端配置
-        connectionStatus.value = 'success'
-        const settingsStore = useSettingsStore()
-        settingsStore.loadRemoteSettings()
-      } else {
-        connectionStatus.value = 'failed'
-        connectionError.value = `服务异常: ${health?.status ?? 'unknown'}`
+      } catch (e) {
+        // 尝试尾斜杠
+        try {
+          const res2 = await fetch(`${testUrl.replace(/\/+$/, '')}/api/health/`)
+          if (res2.ok) {
+            const json2 = await res2.json()
+            healthOk = json2 && (json2.status === 'healthy' || json2.status === 'partial')
+          }
+        } catch (_) {}
       }
+
+      if (!healthOk) {
+        connectionStatus.value = 'failed'
+        connectionError.value = '无法连接到服务，请检查URL和网络。'
+        return
+      }
+
+      // 2) 公网环境下验证鉴权：手动带 Authorization
+      if (testEnv === 'public') {
+        try {
+          const res = await fetch(`${testUrl.replace(/\/+$/, '')}/api/config/environment`, {
+            headers: { Authorization: `Bearer ${testKey}` },
+          })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        } catch (err) {
+          connectionStatus.value = 'failed'
+          connectionError.value = '鉴权失败：请检查鉴权密钥是否正确或是否有权限。'
+          return
+        }
+      }
+
+      // 3) 均通过 => 标记成功（不加载远端配置、不建立 WS）
+      connectionStatus.value = 'success'
     } catch (error) {
       connectionStatus.value = 'failed'
       connectionError.value = '无法连接到服务，请检查URL和网络。'
+    } finally {
+      testingLock.value = false
     }
   }
 
@@ -134,8 +195,9 @@ export const useServiceStore = defineStore('service', () => {
     connectionStatus,
     connectionError,
     wsConnected,
+    // testingLock 不导出到外部，仅用于内部控制 WS 连接时机
     loadAppConfig,
     saveAppConfig,
-    testConnection,
+    testConnectionWithOverride,
   }
 })

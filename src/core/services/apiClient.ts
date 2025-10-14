@@ -35,6 +35,20 @@ export async function apiClient(endpoint: string, options: ExtendedRequestInit =
     headers: headers as HeadersInit,
   })
 
+  // 开发期调试日志：打印请求与响应状态
+  if (import.meta && (import.meta as any).env && (import.meta as any).env.DEV) {
+    try {
+      // 仅在开发态打印，避免泄露生产日志
+      console.log('[apiClient]', {
+        url: `${endpointUrl}${endpoint}`,
+        method: options.method || 'GET',
+        status: response.status,
+      })
+    } catch (_) {
+      // 忽略控制台异常
+    }
+  }
+
   if (!response.ok) {
     throw new Error(`API request failed with status ${response.status}`)
   }

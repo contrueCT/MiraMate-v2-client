@@ -8,7 +8,12 @@ const serviceStore = useServiceStore()
 const { connectionStatus, connectionError } = storeToRefs(serviceStore)
 
 function handleTestConnection() {
-  serviceStore.testConnection()
+  // 使用草稿值进行连接测试（不保存、不建立 WS）
+  serviceStore.testConnectionWithOverride({
+    url: draft.value?.service?.url ?? '',
+    key: draft.value?.service?.key ?? '',
+    env: draft.value?.service?.env ?? 'public',
+  })
 }
 </script>
 

@@ -1,66 +1,103 @@
-import { app as a, ipcMain as n, BrowserWindow as d } from "electron";
-import s from "path";
-import m from "fs/promises";
-import { fileURLToPath as g } from "url";
-const u = g(import.meta.url), l = s.dirname(u), w = process.env.VITE_DEV_SERVER_URL, c = a.getPath("userData"), r = s.join(c, "config.json");
-console.log("User data path:", c);
-console.log("Config file will be saved to:", r);
-n.handle("config:get", async () => {
+import { app, ipcMain, BrowserWindow } from "electron";
+import path from "path";
+import fs from "fs/promises";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
+const userDataPath = app.getPath("userData");
+const configFilePath = path.join(userDataPath, "config.json");
+console.log("User data path:", userDataPath);
+console.log("Config file will be saved to:", configFilePath);
+ipcMain.handle("config:get", async () => {
   try {
-    return await m.access(r), await m.readFile(r, "utf-8");
-  } catch {
+    await fs.access(configFilePath);
+    const data = await fs.readFile(configFilePath, "utf-8");
+    return data;
+  } catch (error) {
     return null;
   }
 });
-n.handle("config:set", async (e, i) => {
+ipcMain.handle("config:set", async (event, configString) => {
   try {
-    return await m.writeFile(r, i, "utf-8"), { success: !0 };
-  } catch (o) {
-    return console.error("Failed to write config file:", o), { success: !1, error: o.message };
+    await fs.writeFile(configFilePath, configString, "utf-8");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to write config file:", error);
+    return { success: false, error: error.message };
   }
 });
-n.on("window:minimize", (e) => {
+ipcMain.on("window:minimize", (event) => {
   console.log("Minimize window requested");
-  const i = d.fromWebContents(e.sender);
-  i && i.minimize();
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.minimize();
 });
-n.on("window:close", (e) => {
+ipcMain.on("window:close", (event) => {
   console.log("Close window requested");
-  const i = d.fromWebContents(e.sender);
-  i && i.close();
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.close();
 });
-function f() {
-  const e = new d({
+function createWindow() {
+  const mainWindow = new BrowserWindow({
     width: 1200,
     height: 720,
-    frame: !1,
+    frame: false,
     // 移除默认窗口边框
-    icon: s.join(l, "..", "src", "assets", "images", "favicon.ico"),
+    icon: path.join(__dirname, "..", "src", "assets", "images", "favicon.ico"),
     // 设置应用图标
     webPreferences: {
       // 使用我们刚刚创建的、ESM安全的 __dirname
-      preload: s.join(l, "preload.mjs")
+      preload: path.join(__dirname, "preload.mjs")
     }
   });
-  let i = !1;
-  e.on("maximize", () => {
-    console.log("Window maximized event triggered, sending to renderer"), i = !0, e.webContents.send("window:maximized", !0);
-  }), e.on("unmaximize", () => {
-    console.log("Window unmaximized event triggered, sending to renderer"), i = !1, e.webContents.send("window:maximized", !1);
-  }), e.webContents.once("did-finish-load", () => {
-    console.log("Page loaded, sending initial window state");
-    const t = e.isMaximized();
-    console.log("Initial window state:", t), i = t, e.webContents.send("window:maximized", t);
+  let windowMaximized = false;
+  mainWindow.on("maximize", () => {
+    console.log("Window maximized event triggered, sending to renderer");
+    windowMaximized = true;
+    mainWindow.webContents.send("window:maximized", true);
   });
-  const o = n.listeners("window:maximize")[0];
-  o && n.removeListener("window:maximize", o), n.on("window:maximize", (t) => {
-    console.log("Maximize window requested"), t.sender === e.webContents && (console.log("Window is currently maximized (tracked):", i), i ? (console.log("Unmaximizing window"), e.unmaximize()) : (console.log("Maximizing window"), e.maximize()));
-  }), w ? (e.loadURL(w), e.webContents.openDevTools()) : e.loadFile(s.join(l, "..", "dist", "index.html"));
+  mainWindow.on("unmaximize", () => {
+    console.log("Window unmaximized event triggered, sending to renderer");
+    windowMaximized = false;
+    mainWindow.webContents.send("window:maximized", false);
+  });
+  mainWindow.webContents.once("did-finish-load", () => {
+    console.log("Page loaded, sending initial window state");
+    const isMaximized = mainWindow.isMaximized();
+    console.log("Initial window state:", isMaximized);
+    windowMaximized = isMaximized;
+    mainWindow.webContents.send("window:maximized", isMaximized);
+  });
+  const originalMaximizeHandler = ipcMain.listeners("window:maximize")[0];
+  if (originalMaximizeHandler) {
+    ipcMain.removeListener("window:maximize", originalMaximizeHandler);
+  }
+  ipcMain.on("window:maximize", (event) => {
+    console.log("Maximize window requested");
+    if (event.sender !== mainWindow.webContents) return;
+    console.log("Window is currently maximized (tracked):", windowMaximized);
+    if (windowMaximized) {
+      console.log("Unmaximizing window");
+      mainWindow.unmaximize();
+    } else {
+      console.log("Maximizing window");
+      mainWindow.maximize();
+    }
+  });
+  if (VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(VITE_DEV_SERVER_URL);
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  }
 }
-a.whenReady().then(f);
-a.on("window-all-closed", () => {
-  process.platform !== "darwin" && (a.quit(), process.exit(0));
+app.whenReady().then(createWindow);
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+    process.exit(0);
+  }
 });
-a.on("activate", () => {
-  d.getAllWindows().length === 0 && f();
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
