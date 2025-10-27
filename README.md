@@ -1,6 +1,9 @@
 # MiraMate v2 Client
 
-MiraMate 是一个以「长期陪伴 / 持续运行 / 类人格化」为方向的开源 AI 伴侣智能体项目。此仓库为 **桌面端 (Electron + Vue 3 + Vite + TypeScript) 客户端**。
+MiraMate 是一个以「长期陪伴 / 持续运行 / 类人格化」为方向的开源 AI 伴侣智能体项目。此仓库为 **客户端 (Windows 桌面端 + Android)**：
+
+- Windows：Electron + Vue 3 + Vite + TypeScript
+- Android：Capacitor（同一前端代码，原生打包为 APK/AAB）
 
 > 客户端本身不内置大模型推理能力，它通过 REST 与 WebSocket 连接远端后端服务，实现对话、配置同步、流式输出与后续的“自主活动”展示。完整的智能体核心（记忆、调度、长程行为）在后端仓库：
 > https://github.com/contrueCT/MiraMate-v2
@@ -37,6 +40,16 @@ MiraMate 是一个以「长期陪伴 / 持续运行 / 类人格化」为方向�
 | 桌面封装 | Electron（自定义无边框窗口）          |
 | 通信     | REST + WebSocket（流式增量 token）    |
 | 配置适配 | `configAdapter`（前后端模型配置互转） |
+
+---
+
+## 支持平台与获取方式
+
+- Windows 桌面端与 Android 客户端
+  - 在 GitHub Releases 页面获取安装包与 APK：
+    - https://github.com/contrueCT/MiraMate-v2-client/releases
+
+> 提示：客户端本身不包含模型推理，请在设置中填写后端服务地址与鉴权密钥；公网部署时 HTTP 走 Bearer 鉴权，WebSocket 通过 URL `token` 参数鉴权。
 
 ---
 
