@@ -1,6 +1,28 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useChatStore } from '@/core/stores/chat'
+
 const draft = defineModel<any>('draft')
-</script>
+const chatStore = useChatStore()
+const isClearing = ref(false)
+
+async function clearChatHistory() {
+  if (!confirm('确定要清空所有聊天记录吗？此操作不可恢复。')) {
+    return
+  }
+  
+  isClearing.value = true
+  try {
+    await chatStore.clearAllMessages()
+    alert('聊天记录已清空')
+  } catch (error) {
+    console.error('Failed to clear messages:', error)
+    alert('清空失败，请重试')
+  } finally {
+    isClearing.value = false
+  }
+}
+
 <template>
   <div class="space-y-8">
     <!-- 外观区块 -->
@@ -50,6 +72,23 @@ const draft = defineModel<any>('draft')
               draft.preferences.enableNotifications ? 'translate-x-7 md:translate-x-6' : '',
             ]"
           ></div>
+        </button>
+      </div>
+    </div>
+    <!-- 数据管理区块 -->
+    <div class="space-y-6">
+      <h3 class="text-lg font-bold border-b pb-2">数据管理</h3>
+      <div class="flex items-center justify-between">
+        <div>
+          <label class="font-semibold block">清空聊天记录</label>
+          <p class="text-sm text-gray-600 mt-1">删除本地存储的所有聊天记录</p>
+        </div>
+        <button
+          @click="clearChatHistory"
+          :disabled="isClearing"
+          class="px-4 py-2 md:px-3 md:py-1.5 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ isClearing ? '清空中...' : '清空记录' }}
         </button>
       </div>
     </div>
