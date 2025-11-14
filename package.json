@@ -28,23 +28,25 @@
     "cap:copy": "cap copy"
   },
   "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/local-notifications": "^6.1.0",
+    "@capacitor/preferences": "^6.0.3",
     "emoji-picker-element": "^1.26.3",
+    "mermaid": "^11.12.1",
     "pinia": "^3.0.3",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1",
-    "@capacitor/core": "^6.1.2",
-    "@capacitor/preferences": "^6.0.3",
-    "@capacitor/local-notifications": "^6.1.0"
+    "vue-renderer-markdown": "^0.0.61-beta.8",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^22.16.5",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/tsconfig": "^0.7.0",
-    "@capacitor/cli": "^6.1.2",
-    "@capacitor/android": "^6.1.2",
     "autoprefixer": "^10.4.21",
     "electron": "^37.3.0",
     "electron-builder": "^26.0.12",

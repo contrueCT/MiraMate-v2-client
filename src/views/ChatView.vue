@@ -135,7 +135,7 @@ function formatTimestamp(timestamp: number): string {
 
     <ChatHeader @open-settings="router.push('/settings')" />
 
-    <main ref="messageContainer" class="flex-grow overflow-y-auto p-4 space-y-2 pb-48">
+    <main ref="messageContainer" class="flex-1 overflow-y-auto p-4 space-y-2">
       <template v-for="(message, index) in messages" :key="message.id">
         <!-- 时间戳显示区域 -->
         <div
@@ -146,11 +146,17 @@ function formatTimestamp(timestamp: number): string {
         </div>
 
         <!-- 消息气泡本体 -->
-        <MessageBubble :text="message.text" :sender="message.sender" />
+        <MessageBubble
+          :text="message.text"
+          :sender="message.sender"
+          :is-streaming="message.isStreaming"
+        />
       </template>
+      <!-- 底部占位，确保最后一条消息不被输入框遮挡 -->
+      <div class="h-4"></div>
     </main>
 
-    <div class="absolute bottom-0 left-0 right-0 p-4">
+    <div class="flex-shrink-0 p-4 bg-gradient-to-br from-mira-bg-start to-mira-bg-end">
       <ChatInputArea @send-message="handleSendMessage" />
     </div>
 
