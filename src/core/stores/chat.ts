@@ -11,7 +11,7 @@ export const useChatStore = defineStore('chat', () => {
   // --- State ---
   const messages = ref<Message[]>([])
   const aiStatus = ref<AIStatus>('idle')
-  
+
   // 分页相关状态
   const currentPage = ref(0) // 当前已加载的页数（0表示最新一页）
   const hasMoreMessages = ref(false) // 是否还有更多历史消息
@@ -90,11 +90,13 @@ export const useChatStore = defineStore('chat', () => {
     if (saveTimer) {
       clearTimeout(saveTimer)
     }
-    
+
     // 设置新的定时器，500ms后保存
     saveTimer = setTimeout(async () => {
       try {
-        await messageStorage.saveMessages(messages.value)
+        console.log('[ChatStore] Saving messages to storage, count:', messages.value.length)
+        const result = await messageStorage.saveMessages(messages.value)
+        console.log('[ChatStore] Save result:', result)
       } catch (error) {
         console.error('Failed to save messages:', error)
       }
@@ -106,14 +108,17 @@ export const useChatStore = defineStore('chat', () => {
    */
   async function loadInitialMessages() {
     if (isLoadingMessages.value) return
-    
+
+    console.log('[ChatStore] Loading initial messages...')
     isLoadingMessages.value = true
     try {
       const loadedMessages = await messageStorage.getMessages(0, PAGE_SIZE)
+      console.log('[ChatStore] Loaded messages:', loadedMessages.length)
       messages.value = loadedMessages
-      
+
       // 检查是否还有更多消息
       const totalCount = await messageStorage.getMessageCount()
+      console.log('[ChatStore] Total message count:', totalCount)
       hasMoreMessages.value = totalCount > PAGE_SIZE
       currentPage.value = 0
     } catch (error) {
@@ -128,17 +133,17 @@ export const useChatStore = defineStore('chat', () => {
    */
   async function loadMoreMessages() {
     if (isLoadingMessages.value || !hasMoreMessages.value) return
-    
+
     isLoadingMessages.value = true
     try {
       const nextPage = currentPage.value + 1
       const olderMessages = await messageStorage.getMessages(nextPage, PAGE_SIZE)
-      
+
       if (olderMessages.length > 0) {
         // 在现有消息前面插入更早的消息
         messages.value = [...olderMessages, ...messages.value]
         currentPage.value = nextPage
-        
+
         // 检查是否还有更多
         const totalCount = await messageStorage.getMessageCount()
         hasMoreMessages.value = totalCount > (nextPage + 1) * PAGE_SIZE

@@ -10,7 +10,7 @@ async function clearChatHistory() {
   if (!confirm('确定要清空所有聊天记录吗？此操作不可恢复。')) {
     return
   }
-  
+
   isClearing.value = true
   try {
     await chatStore.clearAllMessages()
@@ -25,41 +25,37 @@ async function clearChatHistory() {
 </script>
 
 <template>
-  <div class="space-y-8">
-    <!-- 外观区块 -->
-    <div class="space-y-6">
-      <h3 class="text-lg md:text-lg font-bold border-b pb-2">外观</h3>
-      <div class="flex items-center justify-between">
-        <label class="font-semibold">主题</label>
-        <!-- 分段控件 -->
-        <div class="flex bg-gray-200 p-1 rounded-md">
-          <button
-            v-for="theme in ['浅色', '深色', '跟随系统']"
-            :key="theme"
-            @click="draft.preferences.theme = theme"
-            :class="[
-              'px-4 py-2 md:px-3 md:py-1 text-sm rounded-md transition-colors',
-              draft.preferences.theme === theme ? 'bg-white shadow' : '',
-            ]"
-          >
-            {{ theme }}
-          </button>
-        </div>
-      </div>
-      <div class="flex items-center justify-between">
-        <label class="font-semibold">语言</label>
-        <select v-model="draft.preferences.language" class="p-3 md:p-2 border rounded-md">
-          <option>简体中文</option>
-          <option>English</option>
-        </select>
+  <div class="space-y-6">
+    <div>
+      <label class="font-semibold">主题</label>
+      <!-- 分段控件 -->
+      <div class="flex bg-gray-200 p-1 rounded-md mt-1 w-fit">
+        <button
+          v-for="theme in ['浅色', '深色', '跟随系统']"
+          :key="theme"
+          @click="draft.preferences.theme = theme"
+          :class="[
+            'px-4 py-2 md:px-3 md:py-1 text-sm rounded-md transition-colors',
+            draft.preferences.theme === theme ? 'bg-white shadow' : '',
+          ]"
+        >
+          {{ theme }}
+        </button>
       </div>
     </div>
-    <!-- 通知区块 -->
-    <div class="space-y-6">
-      <h3 class="text-lg font-bold border-b pb-2">通知</h3>
-      <div class="flex items-center justify-between">
-        <label class="font-semibold">接收新消息通知</label>
-        <!-- 开关 -->
+
+    <div>
+      <label class="font-semibold">语言</label>
+      <select v-model="draft.preferences.language" class="w-full mt-1 p-3 md:p-2 border rounded-md">
+        <option>简体中文</option>
+        <option>English</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="font-semibold">接收新消息通知</label>
+      <!-- 开关 -->
+      <div class="mt-1">
         <button
           @click="draft.preferences.enableNotifications = !draft.preferences.enableNotifications"
           :class="[
@@ -76,22 +72,17 @@ async function clearChatHistory() {
         </button>
       </div>
     </div>
-    <!-- 数据管理区块 -->
-    <div class="space-y-6">
-      <h3 class="text-lg font-bold border-b pb-2">数据管理</h3>
-      <div class="flex items-center justify-between">
-        <div>
-          <label class="font-semibold block">清空聊天记录</label>
-          <p class="text-sm text-gray-600 mt-1">删除本地存储的所有聊天记录</p>
-        </div>
-        <button
-          @click="clearChatHistory"
-          :disabled="isClearing"
-          class="px-4 py-2 md:px-3 md:py-1.5 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ isClearing ? '清空中...' : '清空记录' }}
-        </button>
-      </div>
+
+    <div>
+      <label class="font-semibold block">清空聊天记录</label>
+      <p class="text-sm text-gray-600 mt-1 mb-2">删除本地存储的所有聊天记录</p>
+      <button
+        @click="clearChatHistory"
+        :disabled="isClearing"
+        class="px-4 py-2 md:px-3 md:py-1.5 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {{ isClearing ? '清空中...' : '清空记录' }}
+      </button>
     </div>
   </div>
 </template>
