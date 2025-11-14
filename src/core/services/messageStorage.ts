@@ -8,7 +8,7 @@ export interface MessageStorage {
    * 获取存储的消息列表
    * @param page 页码（从0开始）
    * @param pageSize 每页大小
-   * @returns 消息列表（从新到旧）
+   * @returns 消息列表（从旧到新的顺序）
    */
   getMessages: (page: number, pageSize: number) => Promise<Message[]>
   

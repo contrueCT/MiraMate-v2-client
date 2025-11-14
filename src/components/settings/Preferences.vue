@@ -22,6 +22,7 @@ async function clearChatHistory() {
     isClearing.value = false
   }
 }
+</script>
 
 <template>
   <div class="space-y-8">
