@@ -163,23 +163,15 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // 监听消息变化，自动保存到本地
+  // 使用 deep watch 可以同时监听数组长度和内容变化
   watch(
-    () => messages.value.length,
+    messages,
     () => {
       if (messages.value.length > 0) {
         saveMessagesToStorage()
       }
     },
-  )
-
-  // 监听消息内容变化（流式输入时）
-  watch(
-    () => messages.value.map((m) => m.text).join(''),
-    () => {
-      if (messages.value.length > 0) {
-        saveMessagesToStorage()
-      }
-    },
+    { deep: true },
   )
 
   return {

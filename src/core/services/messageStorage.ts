@@ -129,12 +129,15 @@ export const messageStorage: MessageStorage = (() => {
         // 消息按时间从旧到新排序（确保顺序一致）
         allMessages.sort((a, b) => a.timestamp - b.timestamp)
         
-        // 从最新的消息开始分页（倒序）
+        // 从最新的消息开始分页
+        // page=0 返回最新的 pageSize 条消息
+        // page=1 返回次新的 pageSize 条消息，依此类推
         const totalCount = allMessages.length
         const startIndex = Math.max(0, totalCount - (page + 1) * pageSize)
         const endIndex = totalCount - page * pageSize
         
-        return allMessages.slice(startIndex, endIndex).reverse()
+        // 返回的消息保持从旧到新的顺序
+        return allMessages.slice(startIndex, endIndex)
       } catch {
         return []
       }
