@@ -23,6 +23,7 @@ MiraMate 是一个以「长期陪伴 / 持续运行 / 类人格化」为方向�
 本客户端聚焦：
 
 - 直观的流式输出体验与状态可视化。
+- 本地消息缓存与分页加载（自动保存对话记录，支持滚动加载历史消息）。
 - 远程模型与对话设定查看 / 编辑。
 - 服务连接、健康检查与本地偏好持久化。
 - 未来扩展：主动行为面板、记忆可视化、工具调用轨迹等。
@@ -62,11 +63,31 @@ src/
 	components/      # UI 组件（聊天输入、头部、设置面板等）
 	core/
 		stores/        # Pinia stores (chat / settings / service)
-		services/      # socket / apiClient / configAdapter 等通信与适配层
+		services/      # socket / apiClient / configAdapter / messageStorage 等通信与适配层
 		types.ts       # 公共类型
 	views/           # ChatView / SettingsView
 	assets/          # 静态资源与图标
 ```
+
+---
+
+## 核心功能说明
+
+### 本地消息缓存与分页加载
+
+客户端支持将对话记录自动保存到本地存储（localStorage / Capacitor Preferences / Electron），实现以下特性：
+
+- **自动保存**：每次对话自动保存到本地，防抖延迟 500ms
+- **分页加载**：每次加载 50 条消息，避免一次性加载大量记录导致卡顿
+- **滚动加载**：向上滚动到顶部时自动加载更早的历史消息
+- **智能滚动**：加载历史消息时保持用户当前查看位置不变
+- **跨平台支持**：自动适配 Electron、Capacitor（Android）和 Web 环境
+- **清空功能**：设置页面提供清空聊天记录按钮
+
+实现文件：
+- `src/core/services/messageStorage.ts` - 消息存储服务
+- `src/core/stores/chat.ts` - 聊天状态管理（含分页逻辑）
+- `src/views/ChatView.vue` - 滚动加载实现
 
 ---
 
