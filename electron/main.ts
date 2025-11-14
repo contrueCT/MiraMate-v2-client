@@ -14,8 +14,10 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 // --- 配置文件路径 ---
 const userDataPath = app.getPath('userData')
 const configFilePath = path.join(userDataPath, 'config.json')
+const messagesFilePath = path.join(userDataPath, 'messages.json')
 console.log('User data path:', userDataPath)
 console.log('Config file will be saved to:', configFilePath)
+console.log('Messages file will be saved to:', messagesFilePath)
 
 // --- IPC 通信处理 ---
 ipcMain.handle('config:get', async () => {
@@ -34,6 +36,68 @@ ipcMain.handle('config:set', async (event, configString: string) => {
     return { success: true }
   } catch (error) {
     console.error('Failed to write config file:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+// --- 消息存储相关的 IPC 处理 ---
+ipcMain.handle('messages:get', async (event, page: number, pageSize: number) => {
+  try {
+    await fs.access(messagesFilePath)
+    const data = await fs.readFile(messagesFilePath, 'utf-8')
+    const allMessages = JSON.parse(data)
+    
+    if (!Array.isArray(allMessages)) {
+      return []
+    }
+    
+    // 消息按时间从旧到新排序
+    allMessages.sort((a: any, b: any) => a.timestamp - b.timestamp)
+    
+    // 分页逻辑：page=0 返回最新的 pageSize 条消息
+    const totalCount = allMessages.length
+    const startIndex = Math.max(0, totalCount - (page + 1) * pageSize)
+    const endIndex = totalCount - page * pageSize
+    
+    return allMessages.slice(startIndex, endIndex)
+  } catch (error) {
+    // 文件不存在或解析失败，返回空数组
+    return []
+  }
+})
+
+ipcMain.handle('messages:save', async (event, messages: any[]) => {
+  try {
+    await fs.writeFile(messagesFilePath, JSON.stringify(messages), 'utf-8')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to write messages file:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('messages:count', async () => {
+  try {
+    await fs.access(messagesFilePath)
+    const data = await fs.readFile(messagesFilePath, 'utf-8')
+    const allMessages = JSON.parse(data)
+    return Array.isArray(allMessages) ? allMessages.length : 0
+  } catch (error) {
+    return 0
+  }
+})
+
+ipcMain.handle('messages:clear', async () => {
+  try {
+    // 删除消息文件
+    await fs.unlink(messagesFilePath)
+    return { success: true }
+  } catch (error) {
+    // 如果文件不存在，也算成功
+    if ((error as any).code === 'ENOENT') {
+      return { success: true }
+    }
+    console.error('Failed to delete messages file:', error)
     return { success: false, error: (error as Error).message }
   }
 })

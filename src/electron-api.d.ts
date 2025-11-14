@@ -9,6 +9,12 @@ export interface IElectronAPI {
 
   onWindowMaximized: (callback: (isMaximized: boolean) => void) => void
   removeWindowMaximizedListener: () => void
+
+  // 消息存储API
+  getMessages: (page: number, pageSize: number) => Promise<any[]>
+  saveMessages: (messages: any[]) => Promise<{ success: boolean; error?: string }>
+  getMessageCount: () => Promise<number>
+  clearMessages: () => Promise<{ success: boolean; error?: string }>
 }
 
 // 全局的 Window 接口

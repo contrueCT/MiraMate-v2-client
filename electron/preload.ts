@@ -15,6 +15,14 @@ const electronAPI = {
   removeWindowMaximizedListener: () => {
     ipcRenderer.removeAllListeners('window:maximized')
   },
+  // 添加消息存储API
+  getMessages: (page: number, pageSize: number): Promise<any[]> =>
+    ipcRenderer.invoke('messages:get', page, pageSize),
+  saveMessages: (messages: any[]): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('messages:save', messages),
+  getMessageCount: (): Promise<number> => ipcRenderer.invoke('messages:count'),
+  clearMessages: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('messages:clear'),
 }
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI)
